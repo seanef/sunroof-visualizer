@@ -4,6 +4,7 @@ import { Roof } from './Roof';
 import { SolarArray } from './SolarArray';
 import { Sun } from './Sun';
 import { Ground } from './Ground';
+import { Compass } from './Compass';
 import { SolarConfig, SunPosition } from '@/types/solar';
 
 interface SceneProps {
@@ -47,6 +48,9 @@ export function Scene({ config, sunPosition }: SceneProps) {
 
       {/* Ground with terrain, grass, and rocks */}
       <Ground />
+
+      {/* Compass indicator */}
+      <Compass />
 
       {/* Grid helper */}
       <Grid
