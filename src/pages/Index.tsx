@@ -1,11 +1,15 @@
 import { useState, useCallback } from 'react';
 import { Scene } from '@/components/three/Scene';
 import { ControlPanel } from '@/components/controls/ControlPanel';
+import { MobileControlSheet } from '@/components/controls/MobileControlSheet';
+import { QuickControls } from '@/components/controls/QuickControls';
 import { useSunPosition } from '@/hooks/useSunPosition';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { SolarConfig, DEFAULT_CONFIG } from '@/types/solar';
 
 const Index = () => {
   const [config, setConfig] = useState<SolarConfig>(DEFAULT_CONFIG);
+  const isMobile = useIsMobile();
 
   const sunPosition = useSunPosition(
     config.date,
@@ -25,14 +29,37 @@ const Index = () => {
         <Scene config={config} sunPosition={sunPosition} />
       </div>
 
-      {/* Control Panel */}
-      <div className="absolute top-4 left-4 z-10">
-        <ControlPanel
-          config={config}
-          sunPosition={sunPosition}
-          onConfigChange={handleConfigChange}
-        />
-      </div>
+      {/* Desktop: Side panel */}
+      {!isMobile && (
+        <div className="absolute top-4 left-4 z-10">
+          <ControlPanel
+            config={config}
+            sunPosition={sunPosition}
+            onConfigChange={handleConfigChange}
+          />
+        </div>
+      )}
+
+      {/* Mobile: Settings button + Quick controls */}
+      {isMobile && (
+        <>
+          <div className="absolute top-4 left-4 z-10">
+            <MobileControlSheet
+              config={config}
+              sunPosition={sunPosition}
+              onConfigChange={handleConfigChange}
+            />
+          </div>
+          <div className="absolute top-4 left-20 right-4 z-10">
+            <QuickControls
+              date={config.date}
+              time={config.time}
+              onDateChange={(date) => handleConfigChange({ date })}
+              onTimeChange={(time) => handleConfigChange({ time })}
+            />
+          </div>
+        </>
+      )}
 
       {/* Logo/Brand */}
       <div className="absolute bottom-4 right-4 z-10">
