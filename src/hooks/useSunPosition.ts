@@ -19,7 +19,7 @@ export function useSunPosition(
     // Azimuth: 0 = south, positive = west, negative = east
     // Altitude: 0 = horizon, π/2 = zenith
     const distance = 50;
-    const x = distance * Math.sin(sunPos.azimuth) * Math.cos(sunPos.altitude);
+    const x = -distance * Math.sin(sunPos.azimuth) * Math.cos(sunPos.altitude);
     const y = distance * Math.sin(sunPos.altitude);
     const z = distance * Math.cos(sunPos.azimuth) * Math.cos(sunPos.altitude);
 
