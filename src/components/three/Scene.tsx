@@ -3,6 +3,7 @@ import { OrbitControls, Environment, Sky, Grid } from '@react-three/drei';
 import { Roof } from './Roof';
 import { SolarArray } from './SolarArray';
 import { Sun } from './Sun';
+import { Ground } from './Ground';
 import { SolarConfig, SunPosition } from '@/types/solar';
 
 interface SceneProps {
@@ -44,15 +45,8 @@ export function Scene({ config, sunPosition }: SceneProps) {
         spacing={config.panelSpacing}
       />
 
-      {/* Ground plane for context */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -5, 0]}
-        receiveShadow
-      >
-        <planeGeometry args={[200, 200]} />
-        <meshStandardMaterial color="#2a3a2a" roughness={0.9} />
-      </mesh>
+      {/* Ground with terrain, grass, and rocks */}
+      <Ground />
 
       {/* Grid helper */}
       <Grid
