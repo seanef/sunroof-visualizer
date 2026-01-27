@@ -79,8 +79,114 @@ export function Roof({ material, width = 20, depth = 15 }: RoofProps) {
     return null;
   }, [material]);
 
+  const buildingHeight = 4;
+  const wallThickness = 0.3;
+
   return (
     <group>
+      {/* Building walls */}
+      {/* Front wall with door and windows */}
+      <group position={[0, -buildingHeight / 2, depth / 2]}>
+        {/* Left section */}
+        <mesh position={[-width / 4 - 1.5, 0, 0]} castShadow receiveShadow>
+          <boxGeometry args={[width / 2 - 3, buildingHeight, wallThickness]} />
+          <meshStandardMaterial color="#e8e0d5" roughness={0.9} />
+        </mesh>
+        {/* Right section */}
+        <mesh position={[width / 4 + 1.5, 0, 0]} castShadow receiveShadow>
+          <boxGeometry args={[width / 2 - 3, buildingHeight, wallThickness]} />
+          <meshStandardMaterial color="#e8e0d5" roughness={0.9} />
+        </mesh>
+        {/* Above door */}
+        <mesh position={[0, buildingHeight / 2 - 0.5, 0]} castShadow receiveShadow>
+          <boxGeometry args={[2, 1, wallThickness]} />
+          <meshStandardMaterial color="#e8e0d5" roughness={0.9} />
+        </mesh>
+        {/* Door */}
+        <mesh position={[0, -0.5, 0.05]} castShadow>
+          <boxGeometry args={[1.8, 3, 0.1]} />
+          <meshStandardMaterial color="#5a3d2b" roughness={0.7} />
+        </mesh>
+        {/* Door frame */}
+        <mesh position={[0, -0.5, 0.1]}>
+          <boxGeometry args={[2, 3.2, 0.05]} />
+          <meshStandardMaterial color="#3d2817" roughness={0.8} />
+        </mesh>
+        {/* Door handle */}
+        <mesh position={[0.6, -0.5, 0.2]}>
+          <sphereGeometry args={[0.08, 16, 16]} />
+          <meshStandardMaterial color="#b8860b" metalness={0.8} roughness={0.3} />
+        </mesh>
+        
+        {/* Windows - left side */}
+        <mesh position={[-5, 0.3, 0.05]}>
+          <boxGeometry args={[1.5, 1.8, 0.1]} />
+          <meshStandardMaterial color="#87ceeb" metalness={0.3} roughness={0.1} transparent opacity={0.7} />
+        </mesh>
+        <mesh position={[-5, 0.3, 0.08]}>
+          <boxGeometry args={[1.6, 1.9, 0.02]} />
+          <meshStandardMaterial color="#4a4a4a" roughness={0.5} />
+        </mesh>
+        <mesh position={[-5, 0.3, 0.1]}>
+          <boxGeometry args={[0.05, 1.8, 0.02]} />
+          <meshStandardMaterial color="#4a4a4a" roughness={0.5} />
+        </mesh>
+        
+        {/* Windows - right side */}
+        <mesh position={[5, 0.3, 0.05]}>
+          <boxGeometry args={[1.5, 1.8, 0.1]} />
+          <meshStandardMaterial color="#87ceeb" metalness={0.3} roughness={0.1} transparent opacity={0.7} />
+        </mesh>
+        <mesh position={[5, 0.3, 0.08]}>
+          <boxGeometry args={[1.6, 1.9, 0.02]} />
+          <meshStandardMaterial color="#4a4a4a" roughness={0.5} />
+        </mesh>
+        <mesh position={[5, 0.3, 0.1]}>
+          <boxGeometry args={[0.05, 1.8, 0.02]} />
+          <meshStandardMaterial color="#4a4a4a" roughness={0.5} />
+        </mesh>
+      </group>
+
+      {/* Back wall */}
+      <mesh position={[0, -buildingHeight / 2, -depth / 2]} castShadow receiveShadow>
+        <boxGeometry args={[width, buildingHeight, wallThickness]} />
+        <meshStandardMaterial color="#e8e0d5" roughness={0.9} />
+      </mesh>
+
+      {/* Left wall with windows */}
+      <group position={[-width / 2, -buildingHeight / 2, 0]} rotation={[0, Math.PI / 2, 0]}>
+        <mesh castShadow receiveShadow>
+          <boxGeometry args={[depth, buildingHeight, wallThickness]} />
+          <meshStandardMaterial color="#d8d0c5" roughness={0.9} />
+        </mesh>
+        {/* Window */}
+        <mesh position={[0, 0.3, 0.05]}>
+          <boxGeometry args={[1.5, 1.8, 0.1]} />
+          <meshStandardMaterial color="#87ceeb" metalness={0.3} roughness={0.1} transparent opacity={0.7} />
+        </mesh>
+        <mesh position={[0, 0.3, 0.08]}>
+          <boxGeometry args={[1.6, 1.9, 0.02]} />
+          <meshStandardMaterial color="#4a4a4a" roughness={0.5} />
+        </mesh>
+      </group>
+
+      {/* Right wall with windows */}
+      <group position={[width / 2, -buildingHeight / 2, 0]} rotation={[0, -Math.PI / 2, 0]}>
+        <mesh castShadow receiveShadow>
+          <boxGeometry args={[depth, buildingHeight, wallThickness]} />
+          <meshStandardMaterial color="#d8d0c5" roughness={0.9} />
+        </mesh>
+        {/* Window */}
+        <mesh position={[0, 0.3, 0.05]}>
+          <boxGeometry args={[1.5, 1.8, 0.1]} />
+          <meshStandardMaterial color="#87ceeb" metalness={0.3} roughness={0.1} transparent opacity={0.7} />
+        </mesh>
+        <mesh position={[0, 0.3, 0.08]}>
+          <boxGeometry args={[1.6, 1.9, 0.02]} />
+          <meshStandardMaterial color="#4a4a4a" roughness={0.5} />
+        </mesh>
+      </group>
+
       {/* Main roof surface */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[width, depth]} />
