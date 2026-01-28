@@ -125,7 +125,7 @@ export function SolarPaths({ latitude, longitude, radius = 40 }: SolarPathsProps
                 <meshBasicMaterial color={PATH_COLOR} />
               </mesh>
               
-              {/* Text label */}
+              {/* Text label - rotated to face the building (origin) */}
               <Text
                 position={[0, 1.5, 0]}
                 fontSize={1.2}
@@ -134,6 +134,7 @@ export function SolarPaths({ latitude, longitude, radius = 40 }: SolarPathsProps
                 anchorY="bottom"
                 outlineWidth={0.08}
                 outlineColor="#000000"
+                rotation={[0, Math.atan2(path.highPoint.x, path.highPoint.z) + Math.PI, 0]}
               >
                 {path.label}
               </Text>
