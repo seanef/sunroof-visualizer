@@ -8,6 +8,8 @@ export interface SolarConfig {
   longitude: number;
   panelRows: number;
   panelSpacing: number;
+  unitRows: number;
+  unitColumns: number;
 }
 
 export interface SunPosition {
@@ -33,4 +35,6 @@ export const DEFAULT_CONFIG: SolarConfig = {
   longitude: 13.405,
   panelRows: 4,
   panelSpacing: 2.5,
+  unitRows: 2,
+  unitColumns: 3,
 };
