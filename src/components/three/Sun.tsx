@@ -42,6 +42,15 @@ export function Sun({ position, quality = 'high' }: SunProps) {
         shadow-bias={-0.0001}
       />
 
+      {/* Night fill light ("moon") so the scene isn't pitch black */}
+      {isNight && (
+        <directionalLight
+          position={[15, 20, 10]}
+          intensity={0.35}
+          color={'hsl(210 25% 85%)'}
+        />
+      )}
+
       {/* Sun sphere visual */}
       {!isNight && (
         <mesh position={[position.x, position.y, position.z]}>
@@ -51,13 +60,13 @@ export function Sun({ position, quality = 'high' }: SunProps) {
       )}
 
       {/* Ambient light for fill */}
-      <ambientLight intensity={isNight ? 0.1 : 0.3} color="#b4c7e7" />
+      <ambientLight intensity={isNight ? 0.28 : 0.3} color={'hsl(210 35% 85%)'} />
 
       {/* Hemisphere light for sky/ground color */}
       <hemisphereLight
-        color="#87ceeb"
-        groundColor="#3d5c3d"
-        intensity={isNight ? 0.1 : 0.4}
+        color={'hsl(200 60% 75%)'}
+        groundColor={'hsl(120 20% 25%)'}
+        intensity={isNight ? 0.22 : 0.4}
       />
     </>
   );

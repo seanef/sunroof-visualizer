@@ -27,7 +27,6 @@ export function Compass() {
           color="#ef4444"
           anchorX="center"
           anchorY="middle"
-          font="/fonts/inter-bold.woff"
         >
           N
         </Text>
