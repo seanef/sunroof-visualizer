@@ -252,22 +252,22 @@ export function Ground({ quality = 'high' }: GroundProps) {
   }, [isLow]);
 
   // Create curved road geometry that follows terrain
-  // Road goes from z≈-11.8 (parking edge) to z=-50 (scene edge)
+  // Road goes from z=-9 (overlaps with parking) to z=-50 (scene edge)
   const roadGeometry = useMemo(() => {
     const segmentsZ = 50;
     const segmentsX = 4;
     const roadWidth = 4;
-    const roadLength = 38;
+    const roadLength = 42; // Extended to overlap with parking
     
     const geo = new THREE.PlaneGeometry(roadWidth, roadLength, segmentsX, segmentsZ);
     const positions = geo.attributes.position;
     
     for (let i = 0; i < positions.count; i++) {
       const localX = positions.getX(i); // -2 to 2
-      const localZ = positions.getY(i); // -18 to 18
+      const localZ = positions.getY(i); // -21 to 21
       
-      // Map to world coordinates (center at z=-31, so range is z=-50 to z=-12)
-      const worldZ = -31 + localZ;
+      // Map to world coordinates (center at z=-29, so range is z=-50 to z=-8)
+      const worldZ = -29 + localZ;
       const curveX = getRoadCurveX(worldZ);
       const worldX = curveX + localX;
       
@@ -281,7 +281,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
     
     geo.computeVertexNormals();
     return geo;
-  }, [getRoadCurveX, getTerrainHeight, isLow]);
+  }, [isLow]);
 
   // Create parking area geometry - adjacent to the door-side wall (z=-11.8 to z=-7.8)
   const parkingGeometry = useMemo(() => {
@@ -332,6 +332,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
   }, [isLow]);
 
   // Generate gravel stones for road texture - only on door side (negative z)
+  // Position gravel at same height as road surface (terrainY + 0.12) plus small offset
   const roadGravel = useMemo(() => {
     if (isLow) return [];
     
@@ -343,21 +344,23 @@ export function Ground({ quality = 'high' }: GroundProps) {
       const z = -7.8 - Math.random() * 4;
       const terrainY = getTerrainHeight(x, z);
       const scale = 0.03 + Math.random() * 0.05;
-      gravel.push({ position: [x, -4 + terrainY + 0.14, z], scale });
+      // Place gravel on top of road surface (road is at terrainY + 0.12)
+      gravel.push({ position: [x, -4 + terrainY + 0.12 + scale, z], scale });
     }
     
-    // Road gravel - follow curve (z≈-11.8 to z=-50)
+    // Road gravel - follow curve (z=-8 to z=-50)
     for (let i = 0; i < 300; i++) {
-      const z = -12 - Math.random() * 38;
+      const z = -8 - Math.random() * 42;
       const curveX = getRoadCurveX(z);
       const x = curveX + (Math.random() - 0.5) * 3.5;
       const terrainY = getTerrainHeight(x, z);
       const scale = 0.03 + Math.random() * 0.05;
-      gravel.push({ position: [x, -4 + terrainY + 0.14, z], scale });
+      // Place gravel on top of road surface
+      gravel.push({ position: [x, -4 + terrainY + 0.12 + scale, z], scale });
     }
     
     return gravel;
-  }, [isLow, getRoadCurveX, getTerrainHeight]);
+  }, [isLow]);
 
   return (
     <group>
