@@ -105,10 +105,30 @@ function GrassCluster({ position, density = 8 }: { position: [number, number, nu
   );
 }
 
+// Check if a point is on the road or parking area
+function isOnRoad(x: number, z: number): boolean {
+  // Parking area in front of door (centered at x=0, z=10 to z=14)
+  const parkingWidth = 8;
+  const parkingStart = 10;
+  const parkingEnd = 14;
+  
+  if (Math.abs(x) <= parkingWidth / 2 && z >= parkingStart && z <= parkingEnd) {
+    return true;
+  }
+  
+  // Road from parking to edge of scene (z=14 to z=50)
+  const roadWidth = 4;
+  if (Math.abs(x) <= roadWidth / 2 && z > parkingEnd && z <= 50) {
+    return true;
+  }
+  
+  return false;
+}
+
 export function Ground({ quality = 'high' }: GroundProps) {
   const isLow = quality === 'low';
 
-  // Generate rock positions
+  // Generate rock positions - avoid road area
   const rocks = useMemo(() => {
     const rockData: RockProps[] = [];
     const rockClusters = isLow
@@ -131,6 +151,10 @@ export function Ground({ quality = 'high' }: GroundProps) {
       for (let i = 0; i < cluster.count; i++) {
         const x = cluster.center[0] + (Math.random() - 0.5) * 8;
         const z = cluster.center[1] + (Math.random() - 0.5) * 8;
+        
+        // Skip if on road
+        if (isOnRoad(x, z)) continue;
+        
         const scale = 0.3 + Math.random() * 0.8;
         
         rockData.push({
@@ -144,7 +168,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
     return rockData;
   }, [isLow]);
 
-  // Generate grass cluster positions
+  // Generate grass cluster positions - avoid road area
   const grassClusters = useMemo(() => {
     if (isLow) return [];
     const clusters: { position: [number, number, number]; density: number }[] = [];
@@ -154,6 +178,9 @@ export function Ground({ quality = 'high' }: GroundProps) {
         // Skip areas near the building
         const distFromCenter = Math.sqrt(x * x + z * z);
         if (distFromCenter < 12) continue;
+        
+        // Skip road area
+        if (isOnRoad(x, z)) continue;
         
         // Random chance to place grass
         if (Math.random() > 0.4) {
@@ -190,7 +217,10 @@ export function Ground({ quality = 'high' }: GroundProps) {
       const distFromCenter = Math.sqrt(x * x + z * z);
       const flattenFactor = Math.min(1, distFromCenter / 15);
       
-      const height = (noise1 + noise2 + noise3) * flattenFactor;
+      // Flatten road area
+      const roadFlatten = isOnRoad(x, z) ? 0 : 1;
+      
+      const height = (noise1 + noise2 + noise3) * flattenFactor * roadFlatten;
       positions.setZ(i, height);
     }
 
@@ -206,6 +236,10 @@ export function Ground({ quality = 'high' }: GroundProps) {
       const radius = 12 + Math.random() * 20;
       const x = Math.cos(angle) * radius;
       const z = Math.sin(angle) * radius;
+      
+      // Skip if on road
+      if (isOnRoad(x, z)) return null;
+      
       const baseScale = 0.08 + Math.random() * 0.15;
 
       return {
@@ -213,7 +247,32 @@ export function Ground({ quality = 'high' }: GroundProps) {
         rotation: [Math.random(), Math.random(), Math.random()] as [number, number, number],
         scale: [baseScale * 1.5, baseScale, baseScale * 1.2] as [number, number, number],
       };
-    });
+    }).filter(Boolean) as Array<{ position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] }>;
+  }, [isLow]);
+
+  // Generate gravel stones for road texture
+  const roadGravel = useMemo(() => {
+    if (isLow) return [];
+    
+    const gravel: Array<{ position: [number, number, number]; scale: number }> = [];
+    
+    // Parking area gravel
+    for (let i = 0; i < 200; i++) {
+      const x = (Math.random() - 0.5) * 7.5;
+      const z = 10 + Math.random() * 4;
+      const scale = 0.03 + Math.random() * 0.05;
+      gravel.push({ position: [x, -3.97, z], scale });
+    }
+    
+    // Road gravel
+    for (let i = 0; i < 300; i++) {
+      const x = (Math.random() - 0.5) * 3.5;
+      const z = 14 + Math.random() * 36;
+      const scale = 0.03 + Math.random() * 0.05;
+      gravel.push({ position: [x, -3.97, z], scale });
+    }
+    
+    return gravel;
   }, [isLow]);
 
   return (
@@ -246,19 +305,113 @@ export function Ground({ quality = 'high' }: GroundProps) {
         />
       </mesh>
 
-      {/* Dirt/path areas near building */}
+      {/* Gravel road from edge to parking */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -3.97, 8]}
+        position={[0, -3.96, 32]}
         receiveShadow
       >
-        <planeGeometry args={[6, 12]} />
+        <planeGeometry args={[4, 36]} />
         <meshStandardMaterial
-          color="#8b7355"
+          color="#9a8b7a"
           roughness={1}
           metalness={0}
         />
       </mesh>
+
+      {/* Parking area in front of door */}
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -3.96, 12]}
+        receiveShadow
+      >
+        <planeGeometry args={[8, 4]} />
+        <meshStandardMaterial
+          color="#9a8b7a"
+          roughness={1}
+          metalness={0}
+        />
+      </mesh>
+
+      {/* Road edge details - darker border */}
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[-2.2, -3.965, 32]}
+        receiveShadow
+      >
+        <planeGeometry args={[0.4, 36]} />
+        <meshStandardMaterial
+          color="#6b5d4d"
+          roughness={1}
+          metalness={0}
+        />
+      </mesh>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[2.2, -3.965, 32]}
+        receiveShadow
+      >
+        <planeGeometry args={[0.4, 36]} />
+        <meshStandardMaterial
+          color="#6b5d4d"
+          roughness={1}
+          metalness={0}
+        />
+      </mesh>
+
+      {/* Parking area border */}
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[-4.2, -3.965, 12]}
+        receiveShadow
+      >
+        <planeGeometry args={[0.4, 4]} />
+        <meshStandardMaterial
+          color="#6b5d4d"
+          roughness={1}
+          metalness={0}
+        />
+      </mesh>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[4.2, -3.965, 12]}
+        receiveShadow
+      >
+        <planeGeometry args={[0.4, 4]} />
+        <meshStandardMaterial
+          color="#6b5d4d"
+          roughness={1}
+          metalness={0}
+        />
+      </mesh>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -3.965, 9.8]}
+        receiveShadow
+      >
+        <planeGeometry args={[8.8, 0.4]} />
+        <meshStandardMaterial
+          color="#6b5d4d"
+          roughness={1}
+          metalness={0}
+        />
+      </mesh>
+
+      {/* Gravel texture on road */}
+      {!isLow && roadGravel.map((stone, i) => (
+        <mesh
+          key={`gravel-${i}`}
+          position={stone.position}
+          rotation={[Math.random(), Math.random(), Math.random()]}
+          scale={stone.scale}
+        >
+          <dodecahedronGeometry args={[1, 0]} />
+          <meshStandardMaterial 
+            color={Math.random() > 0.5 ? '#8b7355' : '#a09080'} 
+            roughness={0.9} 
+          />
+        </mesh>
+      ))}
 
       {/* Rocks */}
       {rocks.map((rock, i) => (
