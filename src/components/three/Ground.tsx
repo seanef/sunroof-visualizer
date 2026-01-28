@@ -311,7 +311,9 @@ export function Ground({ quality = 'high' }: GroundProps) {
       colors[i * 3 + 2] = b;
     }
 
-    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const colorAttr = new THREE.BufferAttribute(colors, 3);
+    colorAttr.needsUpdate = true;
+    geo.setAttribute('color', colorAttr);
     geo.computeVertexNormals();
     return geo;
   }, [isLow]);
@@ -453,7 +455,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
         receiveShadow
       >
         <meshStandardMaterial
-          vertexColors
+          vertexColors={true}
           roughness={0.95}
           metalness={0}
         />
