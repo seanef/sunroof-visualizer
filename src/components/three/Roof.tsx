@@ -83,6 +83,38 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
       return tex;
     }
     
+    if (material === 'bitumen') {
+      // Create dark texture with color variation for bitumen
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d')!;
+      
+      // Dark base color
+      ctx.fillStyle = '#2a2a2a';
+      ctx.fillRect(0, 0, 256, 256);
+      
+      // Add varied dark texture
+      for (let i = 0; i < 10000; i++) {
+        const x = Math.random() * 256;
+        const y = Math.random() * 256;
+        const shade = Math.floor(Math.random() * 30 - 15);
+        const baseValue = 42; // Dark base value
+        const value = Math.max(25, Math.min(60, baseValue + shade));
+        // Slight color variation (not pure grey)
+        const r = value + Math.floor(Math.random() * 8 - 4);
+        const g = value + Math.floor(Math.random() * 6 - 3);
+        const b = value + Math.floor(Math.random() * 4 - 2);
+        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+        ctx.fillRect(x, y, 2, 2);
+      }
+      
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(6, 6);
+      return tex;
+    }
+    
     return null;
   }, [material, width, depth, gravelTexture, greenTexture]);
 
