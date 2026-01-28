@@ -2,7 +2,8 @@ import { SolarConfig, SunPosition } from '@/types/solar';
 import { RoofMaterialSelector } from './RoofMaterialSelector';
 import { SunPositionControls } from './SunPositionControls';
 import { PanelControls } from './PanelControls';
-import { Sun, Layers, Grid3X3, Info, Settings } from 'lucide-react';
+import { UnitControls } from './UnitControls';
+import { Sun, Layers, Grid3X3, Box, Info, Settings } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
   Sheet,
@@ -84,6 +85,22 @@ export function MobileControlSheet({ config, sunPosition, onConfigChange }: Mobi
             onTimeChange={(time) => onConfigChange({ time })}
             onLatitudeChange={(latitude) => onConfigChange({ latitude })}
             onLongitudeChange={(longitude) => onConfigChange({ longitude })}
+          />
+        </div>
+
+        <Separator className="mb-5" />
+
+        {/* PV Unit Configuration */}
+        <div className="mb-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Box className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium">xM3 Unit Layout</span>
+          </div>
+          <UnitControls
+            unitRows={config.unitRows}
+            unitColumns={config.unitColumns}
+            onUnitRowsChange={(unitRows) => onConfigChange({ unitRows })}
+            onUnitColumnsChange={(unitColumns) => onConfigChange({ unitColumns })}
           />
         </div>
 
