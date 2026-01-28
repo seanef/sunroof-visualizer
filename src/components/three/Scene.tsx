@@ -2,7 +2,6 @@ import { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, Sky, Grid } from '@react-three/drei';
 import { Roof } from './Roof';
-import { SolarArray } from './SolarArray';
 import { PVUnitArray } from './PVUnitArray';
 import { Sun } from './Sun';
 import { Ground } from './Ground';
@@ -55,12 +54,6 @@ export function Scene({ config, sunPosition }: SceneProps) {
           columns={config.unitColumns}
         />
       </Suspense>
-
-      {/* Solar panels (legacy - can be hidden if using PV units) */}
-      <SolarArray
-        rows={config.panelRows}
-        spacing={config.panelSpacing}
-      />
 
       {/* Ground with terrain, grass, and rocks */}
       <Ground quality={isMobile ? 'low' : 'high'} />
