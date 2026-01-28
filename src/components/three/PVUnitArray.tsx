@@ -7,6 +7,7 @@ import { Box3, Vector3, Mesh } from 'three';
 interface PVUnitArrayProps {
   rows: number;
   columns: number;
+  azimuth: number; // degrees, 0 = North, 90 = East
 }
 
 // Actual PV unit dimensions in meters (for scaling)
@@ -17,7 +18,7 @@ const UNIT_ACTUAL_DEPTH = 1.489; // 1489mm = 1.489m
 const UNIT_SPACING_X = 1.545;  // 1580mm - 35mm overlap = 1.545m
 const UNIT_SPACING_Z = 1.451; // 1489mm - 38mm overlap = 1.451m
 
-export function PVUnitArray({ rows, columns }: PVUnitArrayProps) {
+export function PVUnitArray({ rows, columns, azimuth }: PVUnitArrayProps) {
   const materials = useLoader(MTLLoader, '/models/Assembly_simplified_v7.mtl');
   const obj = useLoader(OBJLoader, '/models/Assembly_simplified_v7.obj', (loader) => {
     materials.preload();
@@ -94,7 +95,12 @@ export function PVUnitArray({ rows, columns }: PVUnitArrayProps) {
     }
     
     return result;
-  }, [centeredObj, rows, columns]);
+  }, [centeredObj, rows, columns, scale]);
 
-  return <group>{instances}</group>;
+  // Convert azimuth to radians for rotation (0° = North, 90° = East)
+  // In Three.js, rotation around Y-axis: 0 = +Z direction
+  // We want 0° = North (-Z in our scene), 90° = East (+X)
+  const azimuthRadians = (azimuth * Math.PI) / 180;
+
+  return <group rotation={[0, azimuthRadians, 0]}>{instances}</group>;
 }

@@ -8,6 +8,7 @@ export interface SolarConfig {
   longitude: number;
   unitRows: number;
   unitColumns: number;
+  arrayAzimuth: number; // degrees, 0 = North, 90 = East (front facing direction)
 }
 
 export interface SunPosition {
@@ -33,4 +34,5 @@ export const DEFAULT_CONFIG: SolarConfig = {
   longitude: 13.405,
   unitRows: 2,
   unitColumns: 3,
+  arrayAzimuth: 90, // Default: front facing East
 };

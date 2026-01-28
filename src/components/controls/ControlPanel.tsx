@@ -81,8 +81,10 @@ export function ControlPanel({ config, sunPosition, onConfigChange }: ControlPan
         <UnitControls
           unitRows={config.unitRows}
           unitColumns={config.unitColumns}
+          arrayAzimuth={config.arrayAzimuth}
           onUnitRowsChange={(unitRows) => onConfigChange({ unitRows })}
           onUnitColumnsChange={(unitColumns) => onConfigChange({ unitColumns })}
+          onArrayAzimuthChange={(arrayAzimuth) => onConfigChange({ arrayAzimuth })}
         />
       </div>
 
