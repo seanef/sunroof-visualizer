@@ -416,7 +416,8 @@ export function Ground({ quality = 'high' }: GroundProps) {
         receiveShadow
       >
         <meshStandardMaterial
-          vertexColors
+          vertexColors={true}
+          color="#3d5c35"
           roughness={0.95}
           metalness={0}
         />
