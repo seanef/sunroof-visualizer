@@ -22,7 +22,7 @@ const ROOF_ROUGHNESS: Record<RoofMaterial, number> = {
   bitumen: 0.7,
 };
 
-export function Roof({ material, width = 20, depth = 15 }: RoofProps) {
+export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
   const texture = useMemo(() => {
     if (material === 'green') {
       // Create grass-like texture

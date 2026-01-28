@@ -10,8 +10,8 @@ interface PVUnitArrayProps {
 }
 
 // PV unit footprint in meters (1500x1480 mm)
-const UNIT_WIDTH = 1.5;  // 1500mm = 1.5m (x-axis)
-const UNIT_DEPTH = 1.48; // 1480mm = 1.48m (z-axis)
+const UNIT_WIDTH = 1.5;  // 1500mm = 1.5m (x-axis after rotation)
+const UNIT_DEPTH = 1.48; // 1480mm = 1.48m (z-axis after rotation)
 
 // Scale factor to convert OBJ units (mm) to scene units (m)
 const SCALE = 0.001;
@@ -23,7 +23,7 @@ export function PVUnitArray({ rows, columns }: PVUnitArrayProps) {
     loader.setMaterials(materials);
   });
 
-  // Center the original geometry once
+  // Center the original geometry once and apply rotation
   const centeredObj = useMemo(() => {
     const clone = obj.clone(true);
     
@@ -58,12 +58,15 @@ export function PVUnitArray({ rows, columns }: PVUnitArrayProps) {
       for (let col = 0; col < columns; col++) {
         const clone = centeredObj.clone(true);
         
-        // Position each unit
+        // Position each unit edge-to-edge
         const x = startX + col * UNIT_WIDTH;
         const z = startZ + row * UNIT_DEPTH;
         
         clone.position.set(x, 0.05, z);
         clone.scale.set(SCALE, SCALE, SCALE);
+        
+        // Rotate 90 degrees around X-axis so panels lay flat with lamellas vertical
+        clone.rotation.set(-Math.PI / 2, 0, 0);
         
         // Enable shadows
         clone.traverse((child) => {
