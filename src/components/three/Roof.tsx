@@ -168,8 +168,14 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
   };
 
   // Window component
-  const Window = ({ position }: { position: [number, number, number] }) => (
-    <group position={position}>
+  const Window = ({
+    position,
+    outward = 1,
+  }: {
+    position: [number, number, number];
+    outward?: 1 | -1;
+  }) => (
+    <group position={position} rotation={[0, outward === -1 ? Math.PI : 0, 0]}>
       {/* Window frame (outer) */}
       <mesh position={[0, 0, 0.06]}>
         <boxGeometry args={[windowSize + 0.15, windowSize + 0.15, 0.08]} />
@@ -213,7 +219,7 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
           <meshStandardMaterial color="#5a3d2b" roughness={0.7} />
         </mesh>
         {/* Door frame */}
-        <mesh position={[0, -0.5, wallThickness / 2 + 0.02]}>
+        <mesh position={[0, -0.4, wallThickness / 2 + 0.02]}>
           <boxGeometry args={[doorWidth + 0.2, 3.2, 0.05]} />
           <meshStandardMaterial color="#3d2817" roughness={0.8} />
         </mesh>
@@ -225,7 +231,11 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
         
         {/* Windows on front wall */}
         {frontWindowPositions.map((x, i) => (
-          <Window key={`front-window-${i}`} position={[x, windowYPosition, wallThickness / 2]} />
+          <Window
+            key={`front-window-${i}`}
+            position={[x, windowYPosition, wallThickness / 2 + 0.001]}
+            outward={1}
+          />
         ))}
       </group>
 
@@ -237,7 +247,11 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
         </mesh>
         {/* Windows on back wall */}
         {backWindowPositions.map((x, i) => (
-          <Window key={`back-window-${i}`} position={[x, windowYPosition, -wallThickness / 2]} />
+          <Window
+            key={`back-window-${i}`}
+            position={[x, windowYPosition, -wallThickness / 2 - 0.001]}
+            outward={-1}
+          />
         ))}
       </group>
 
@@ -249,7 +263,11 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
         </mesh>
         {/* Windows on left wall */}
         {sideWindowPositions.map((z, i) => (
-          <Window key={`left-window-${i}`} position={[z, windowYPosition, wallThickness / 2]} />
+          <Window
+            key={`left-window-${i}`}
+            position={[z, windowYPosition, -wallThickness / 2 - 0.001]}
+            outward={-1}
+          />
         ))}
       </group>
 
@@ -261,7 +279,11 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
         </mesh>
         {/* Windows on right wall */}
         {sideWindowPositions.map((z, i) => (
-          <Window key={`right-window-${i}`} position={[z, windowYPosition, wallThickness / 2]} />
+          <Window
+            key={`right-window-${i}`}
+            position={[z, windowYPosition, -wallThickness / 2 - 0.001]}
+            outward={-1}
+          />
         ))}
       </group>
 
