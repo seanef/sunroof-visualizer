@@ -242,12 +242,12 @@ export function Ground({ quality = 'high' }: GroundProps) {
 
     for (let i = 0; i < positions.count; i++) {
       const x = positions.getX(i);
-      // PlaneGeometry is in the XY plane. We rotate the mesh by -PI/2 around X,
-      // which makes worldZ = -localY. Use this conversion so terrain/road/gravel
-      // all agree on the same world coordinate system.
-      const z = -positions.getY(i);
+      const y = positions.getY(i);
+      // After mesh rotation (-PI/2 on X), localY becomes -worldZ
+      // So worldZ = -localY = -y, meaning localY = -worldZ
+      const worldZ = -y;
       
-      const height = getTerrainHeight(x, z);
+      const height = getTerrainHeight(x, worldZ);
       positions.setZ(i, height);
     }
 
@@ -256,6 +256,8 @@ export function Ground({ quality = 'high' }: GroundProps) {
   }, [isLow]);
 
   // Create curved road geometry that follows terrain (positive Z, door side)
+  // After mesh rotation (-PI/2 on X): localY → -worldZ, localZ → worldY
+  // So to place road at worldZ, we need localY = -worldZ
   const roadGeometry = useMemo(() => {
     const segmentsZ = 50;
     const segmentsX = 4;
@@ -268,20 +270,24 @@ export function Ground({ quality = 'high' }: GroundProps) {
     
     for (let i = 0; i < positions.count; i++) {
       const localX = positions.getX(i);
-      const localZ = positions.getY(i);
+      const localY = positions.getY(i); // ranges from -roadLength/2 to +roadLength/2
       
-      // Map to world coordinates (positive Z)
-      const worldZ = roadCenterZ + localZ;
+      // Map localY to world Z coordinate (door side is +Z)
+      // localY=0 should map to roadCenterZ, localY ranges ±roadLength/2
+      // But after rotation, worldZ = -localY, so we need localY = -worldZ
+      // If we want worldZ = roadCenterZ + offset, then localY = -(roadCenterZ + offset)
+      // But localY currently = offset (from -roadLength/2 to +roadLength/2)
+      // So worldZ after rotation = -localY = -offset
+      // To get worldZ = roadCenterZ + offset, we need to shift: set localY = -(roadCenterZ + localY)
+      
+      const worldZ = roadCenterZ + localY; // where we want this vertex in world space
       const curveX = getRoadCurveX(worldZ);
       const worldX = curveX + localX;
-      
-      const terrainY = getTerrainHeight(worldX, worldZ);
+      const terrainHeight = getTerrainHeight(worldX, worldZ);
       
       positions.setX(i, worldX);
-      // After mesh rotation (-PI/2 on X), worldZ = -localY.
-      // Store -worldZ in localY so the road appears at the intended +Z location.
-      positions.setY(i, -worldZ);
-      positions.setZ(i, terrainY + 0.12);
+      positions.setY(i, -worldZ); // localY = -worldZ so after rotation worldZ = -localY = worldZ
+      positions.setZ(i, terrainHeight + 0.12);
     }
     
     geo.computeVertexNormals();
@@ -300,17 +306,15 @@ export function Ground({ quality = 'high' }: GroundProps) {
     
     for (let i = 0; i < positions.count; i++) {
       const localX = positions.getX(i);
-      const localZ = positions.getY(i);
+      const localY = positions.getY(i);
       
       const worldX = localX;
-      const worldZ = parkingCenterZ + localZ;
-      
-      const terrainY = getTerrainHeight(worldX, worldZ);
+      const worldZ = parkingCenterZ + localY;
+      const terrainHeight = getTerrainHeight(worldX, worldZ);
       
       positions.setX(i, worldX);
-      // After mesh rotation (-PI/2 on X), worldZ = -localY.
-      positions.setY(i, -worldZ);
-      positions.setZ(i, terrainY + 0.12);
+      positions.setY(i, -worldZ); // After rotation: worldZ = -localY
+      positions.setZ(i, terrainHeight + 0.12);
     }
     
     geo.computeVertexNormals();
