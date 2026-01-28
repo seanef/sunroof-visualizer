@@ -134,7 +134,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
         const scale = 0.3 + Math.random() * 0.8;
         
         rockData.push({
-          position: [x, -4.7 + scale * 0.3, z],
+          position: [x, -3.7 + scale * 0.3, z],
           scale,
           rotation: Math.random() * Math.PI * 2,
         });
@@ -161,7 +161,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
           const offsetZ = (Math.random() - 0.5) * 1.5;
           
           clusters.push({
-            position: [x + offsetX, -4.95, z + offsetZ],
+            position: [x + offsetX, -3.95, z + offsetZ],
             density: 5 + Math.floor(Math.random() * 6),
           });
         }
@@ -209,7 +209,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
       const baseScale = 0.08 + Math.random() * 0.15;
 
       return {
-        position: [x, -4.95 + baseScale, z] as [number, number, number],
+        position: [x, -3.95 + baseScale, z] as [number, number, number],
         rotation: [Math.random(), Math.random(), Math.random()] as [number, number, number],
         scale: [baseScale * 1.5, baseScale, baseScale * 1.2] as [number, number, number],
       };
@@ -222,7 +222,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
       <mesh
         geometry={terrainGeometry}
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -5, 0]}
+        position={[0, -4, 0]}
         receiveShadow
       >
         <meshStandardMaterial
@@ -235,7 +235,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
       {/* Grass detail layer - slightly above terrain */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -4.98, 0]}
+        position={[0, -3.98, 0]}
         receiveShadow
       >
         <circleGeometry args={[45, 64]} />
@@ -249,7 +249,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
       {/* Dirt/path areas near building */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -4.97, 8]}
+        position={[0, -3.97, 8]}
         receiveShadow
       >
         <planeGeometry args={[6, 12]} />
@@ -268,9 +268,9 @@ export function Ground({ quality = 'high' }: GroundProps) {
       {/* Large boulders */}
       {!isLow && (
         <>
-          <Rock position={[-22, -4, -15]} scale={2.5} rotation={0.5} />
-          <Rock position={[25, -4, 10]} scale={2.2} rotation={1.2} />
-          <Rock position={[15, -4.2, -20]} scale={1.8} rotation={2.1} />
+          <Rock position={[-22, -3, -15]} scale={2.5} rotation={0.5} />
+          <Rock position={[25, -3, 10]} scale={2.2} rotation={1.2} />
+          <Rock position={[15, -3.2, -20]} scale={1.8} rotation={2.1} />
         </>
       )}
 
