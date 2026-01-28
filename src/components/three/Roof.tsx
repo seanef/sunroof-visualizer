@@ -3,6 +3,7 @@ import { useLoader } from '@react-three/fiber';
 import { RoofMaterial } from '@/types/solar';
 import * as THREE from 'three';
 import gravelTextureImg from '@/assets/textures/gravel-roof.jpg';
+import greenTextureImg from '@/assets/textures/green-roof.jpg';
 
 interface RoofProps {
   material: RoofMaterial;
@@ -24,37 +25,23 @@ const ROOF_ROUGHNESS: Record<RoofMaterial, number> = {
   bitumen: 0.7,
 };
 
-// Gravel tile size in meters (400mm x 500mm)
-const GRAVEL_TILE_WIDTH = 0.4;
-const GRAVEL_TILE_DEPTH = 0.5;
+// Tile size in meters (400mm x 500mm)
+const TILE_WIDTH = 0.4;
+const TILE_DEPTH = 0.5;
 
 export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
-  // Load gravel texture image
+  // Load texture images
   const gravelTexture = useLoader(THREE.TextureLoader, gravelTextureImg);
+  const greenTexture = useLoader(THREE.TextureLoader, greenTextureImg);
   
   const texture = useMemo(() => {
     if (material === 'green') {
-      // Create grass-like texture
-      const canvas = document.createElement('canvas');
-      canvas.width = 256;
-      canvas.height = 256;
-      const ctx = canvas.getContext('2d')!;
-      
-      ctx.fillStyle = ROOF_COLORS.green;
-      ctx.fillRect(0, 0, 256, 256);
-      
-      // Add grass variation
-      for (let i = 0; i < 2000; i++) {
-        const x = Math.random() * 256;
-        const y = Math.random() * 256;
-        const shade = Math.random() * 40 - 20;
-        ctx.fillStyle = `rgb(${61 + shade}, ${139 + shade}, ${79 + shade})`;
-        ctx.fillRect(x, y, 2, 4);
-      }
-      
-      const tex = new THREE.CanvasTexture(canvas);
+      // Use the loaded green roof texture image
+      const tex = greenTexture.clone();
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(4, 4);
+      // Calculate repeats based on tile size (400mm x 500mm)
+      tex.repeat.set(width / TILE_WIDTH, depth / TILE_DEPTH);
+      tex.needsUpdate = true;
       return tex;
     }
     
@@ -63,13 +50,13 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
       const tex = gravelTexture.clone();
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
       // Calculate repeats based on tile size (400mm x 500mm)
-      tex.repeat.set(width / GRAVEL_TILE_WIDTH, depth / GRAVEL_TILE_DEPTH);
+      tex.repeat.set(width / TILE_WIDTH, depth / TILE_DEPTH);
       tex.needsUpdate = true;
       return tex;
     }
     
     return null;
-  }, [material, width, depth, gravelTexture]);
+  }, [material, width, depth, gravelTexture, greenTexture]);
 
   const buildingHeight = 4;
   const wallThickness = 0.3;
