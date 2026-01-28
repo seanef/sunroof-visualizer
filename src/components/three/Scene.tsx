@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Environment, Sky, Grid } from '@react-three/drei';
+import { OrbitControls, Environment, Sky } from '@react-three/drei';
 import { Roof } from './Roof';
 import { PVUnitArray } from './PVUnitArray';
 import { Sun } from './Sun';
@@ -60,21 +60,6 @@ export function Scene({ config, sunPosition }: SceneProps) {
 
       {/* Compass indicator */}
       <Compass />
-
-      {/* Grid helper */}
-      <Grid
-        position={[0, 0.01, 0]}
-        args={[20, 20]}
-        cellSize={1}
-        cellThickness={0.5}
-        cellColor="#4a5568"
-        sectionSize={5}
-        sectionThickness={1}
-        sectionColor="#718096"
-        fadeDistance={50}
-        fadeStrength={1}
-        followCamera={false}
-      />
 
       {/* Controls */}
       <OrbitControls
