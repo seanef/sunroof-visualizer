@@ -19,7 +19,10 @@ export function Scene({ config, sunPosition }: SceneProps) {
     <Canvas
       shadows
       camera={{ position: [15, 12, 15], fov: 50 }}
-      gl={{ antialias: true }}
+      gl={{ antialias: true, powerPreference: 'high-performance' }}
+      dpr={[1, 2]}
+      style={{ width: '100%', height: '100%' }}
+      resize={{ scroll: false, debounce: { scroll: 50, resize: 0 } }}
     >
       {/* Sky */}
       {isDay && (
