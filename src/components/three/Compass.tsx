@@ -6,7 +6,7 @@ export function Compass() {
   const arrowLength = 1;
 
   return (
-    <group position={[-10, 0.02, 10]} scale={0.5}>
+    <group position={[-25, -3.9, 0]} scale={0.6}>
       {/* Compass circle */}
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[radius - 0.3, radius, 64]} />
