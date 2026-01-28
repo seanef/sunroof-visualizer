@@ -112,8 +112,8 @@ const PARKING_Z_END = 12;     // Parking extends 4m outward
 const ROAD_Z_START = 11;      // Road starts overlapping with parking
 const ROAD_Z_END = 50;        // Road extends to edge of scene
 
-// Road/parking surface height above terrain. Needs to sit above the grass detail layer.
-const ROAD_SURFACE_OFFSET = 0.32;
+// Road/parking surface height above terrain. Small offset to sit visibly on ground without floating.
+const ROAD_SURFACE_OFFSET = 0.06;
 
 // Get the X offset for the road curve at a given Z position
 function getRoadCurveX(z: number): number {
