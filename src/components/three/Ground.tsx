@@ -237,12 +237,15 @@ export function Ground({ quality = 'high' }: GroundProps) {
     return clusters;
   }, [isLow]);
 
-  // Create terrain geometry with gentle undulation
+  // Create terrain geometry with gentle undulation and vertex colors for natural grass variation
   const terrainGeometry = useMemo(() => {
     const segments = isLow ? 24 : 64;
     const geo = new THREE.PlaneGeometry(100, 100, segments, segments);
     const positions = geo.attributes.position;
 
+    // Create vertex colors for grass variation
+    const colors = new Float32Array(positions.count * 3);
+    
     for (let i = 0; i < positions.count; i++) {
       const x = positions.getX(i);
       const y = positions.getY(i);
@@ -252,8 +255,26 @@ export function Ground({ quality = 'high' }: GroundProps) {
       
       const height = getTerrainHeight(x, worldZ);
       positions.setZ(i, height);
+      
+      // Generate varied grass colors using noise patterns
+      const noise1 = Math.sin(x * 0.15) * Math.cos(worldZ * 0.12) * 0.5 + 0.5;
+      const noise2 = Math.sin(x * 0.08 + 2) * Math.sin(worldZ * 0.1 + 1) * 0.5 + 0.5;
+      const noise3 = Math.cos(x * 0.25 + worldZ * 0.2) * 0.5 + 0.5;
+      const combined = (noise1 * 0.4 + noise2 * 0.35 + noise3 * 0.25);
+      
+      // Base grass green with variations
+      const baseR = 0.24; // #3d = 61/255
+      const baseG = 0.36; // #5c = 92/255
+      const baseB = 0.21; // #35 = 53/255
+      
+      // Vary between darker and lighter greens
+      const variation = combined * 0.3 - 0.15; // -0.15 to +0.15 range
+      colors[i * 3] = Math.max(0.15, Math.min(0.35, baseR + variation * 0.5));
+      colors[i * 3 + 1] = Math.max(0.28, Math.min(0.50, baseG + variation));
+      colors[i * 3 + 2] = Math.max(0.12, Math.min(0.30, baseB + variation * 0.4));
     }
 
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     geo.computeVertexNormals();
     return geo;
   }, [isLow]);
@@ -395,7 +416,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
         receiveShadow
       >
         <meshStandardMaterial
-          color="#3d5c35"
+          vertexColors
           roughness={0.95}
           metalness={0}
         />
