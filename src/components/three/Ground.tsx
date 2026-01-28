@@ -106,11 +106,15 @@ function GrassCluster({ position, density = 8 }: { position: [number, number, nu
 }
 
 // Get the X offset for the road curve at a given Z position
-// Road comes from negative z edge (z=-50) and ends at parking in front of door (z=-10 to z=-14)
+// Door-side is z-negative in this scene:
+//   parking sits adjacent to the building at z≈-7.5 and extends outward to z≈-11.8
+//   road comes from the scene edge at z=-50 and meets parking at z≈-11.8
 function getRoadCurveX(z: number): number {
-  if (z >= -14) return 0; // Parking area is straight
-  // Gentle S-curve using sine waves (road goes from z=-50 to z=-14)
-  const t = (-14 - z) / 36; // Normalize to 0-1 for the road portion
+  // Parking area is straight
+  if (z >= -11.8) return 0;
+
+  // Gentle S-curve using sine waves (road goes from z=-50 to z≈-11.8)
+  const t = (-11.8 - z) / 38.2; // Normalize to 0-1
   return Math.sin(t * Math.PI * 1.5) * 2.5 + Math.sin(t * Math.PI * 3) * 0.8;
 }
 
@@ -132,16 +136,17 @@ function getTerrainHeight(x: number, z: number): number {
 
 // Check if a point is on the road or parking area (with curve)
 function isOnRoad(x: number, z: number): boolean {
-  // Parking area in front of door (centered at x=0, z=-10 to z=-14)
+  // Parking area adjacent to the door-side wall (centered at x=0, z=-11.8 to z=-7.8)
+  // (building wall is around z=-7.5; we keep a small gap to avoid intersections)
   const parkingWidth = 8;
-  const parkingStart = -14;
-  const parkingEnd = -10;
+  const parkingStart = -11.8;
+  const parkingEnd = -7.8;
   
   if (Math.abs(x) <= parkingWidth / 2 && z >= parkingStart && z <= parkingEnd) {
     return true;
   }
   
-  // Curved road from parking to edge of scene (z=-14 to z=-50)
+  // Curved road from parking to edge of scene (z≈-11.8 to z=-50)
   if (z < parkingStart && z >= -50) {
     const roadCenterX = getRoadCurveX(z);
     const roadWidth = 4;
@@ -247,12 +252,12 @@ export function Ground({ quality = 'high' }: GroundProps) {
   }, [isLow]);
 
   // Create curved road geometry that follows terrain
-  // Road goes from z=-14 (parking edge) to z=-50 (scene edge)
+  // Road goes from z≈-11.8 (parking edge) to z=-50 (scene edge)
   const roadGeometry = useMemo(() => {
     const segmentsZ = 50;
     const segmentsX = 4;
     const roadWidth = 4;
-    const roadLength = 36;
+    const roadLength = 38;
     
     const geo = new THREE.PlaneGeometry(roadWidth, roadLength, segmentsX, segmentsZ);
     const positions = geo.attributes.position;
@@ -261,24 +266,24 @@ export function Ground({ quality = 'high' }: GroundProps) {
       const localX = positions.getX(i); // -2 to 2
       const localZ = positions.getY(i); // -18 to 18
       
-      // Map to world coordinates (center at z=-32, so range is z=-50 to z=-14)
-      const worldZ = -32 + localZ;
+      // Map to world coordinates (center at z=-31, so range is z=-50 to z=-12)
+      const worldZ = -31 + localZ;
       const curveX = getRoadCurveX(worldZ);
       const worldX = curveX + localX;
       
-      // Get terrain height and add larger offset to stay above ground
+      // Get terrain height and add larger offset to stay above ground/grass
       const terrainY = getTerrainHeight(worldX, worldZ);
       
       positions.setX(i, worldX);
       positions.setY(i, worldZ);
-      positions.setZ(i, terrainY + 0.08);
+      positions.setZ(i, terrainY + 0.12);
     }
     
     geo.computeVertexNormals();
     return geo;
-  }, []);
+  }, [getRoadCurveX, getTerrainHeight, isLow]);
 
-  // Create parking area geometry - positioned in front of door (z=-10 to z=-14)
+  // Create parking area geometry - adjacent to the door-side wall (z=-11.8 to z=-7.8)
   const parkingGeometry = useMemo(() => {
     const segmentsX = 8;
     const segmentsZ = 4;
@@ -290,18 +295,18 @@ export function Ground({ quality = 'high' }: GroundProps) {
       const localZ = positions.getY(i);
       
       const worldX = localX;
-      const worldZ = -12 + localZ; // Center at z=-12, so range is z=-14 to z=-10
+      const worldZ = -9.8 + localZ; // Center at z=-9.8, so range is z=-11.8 to z=-7.8
       
       const terrainY = getTerrainHeight(worldX, worldZ);
       
       positions.setX(i, worldX);
       positions.setY(i, worldZ);
-      positions.setZ(i, terrainY + 0.08);
+      positions.setZ(i, terrainY + 0.12);
     }
     
     geo.computeVertexNormals();
     return geo;
-  }, []);
+  }, [getTerrainHeight, isLow]);
 
   const stones = useMemo(() => {
     if (isLow) return [] as Array<{ position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] }>;
@@ -332,27 +337,27 @@ export function Ground({ quality = 'high' }: GroundProps) {
     
     const gravel: Array<{ position: [number, number, number]; scale: number }> = [];
     
-    // Parking area gravel (z=-10 to z=-14)
+    // Parking area gravel (z=-11.8 to z=-7.8)
     for (let i = 0; i < 200; i++) {
       const x = (Math.random() - 0.5) * 7.5;
-      const z = -10 - Math.random() * 4;
+      const z = -7.8 - Math.random() * 4;
       const terrainY = getTerrainHeight(x, z);
       const scale = 0.03 + Math.random() * 0.05;
-      gravel.push({ position: [x, -4 + terrainY + 0.1, z], scale });
+      gravel.push({ position: [x, -4 + terrainY + 0.14, z], scale });
     }
     
-    // Road gravel - follow curve (z=-14 to z=-50)
+    // Road gravel - follow curve (z≈-11.8 to z=-50)
     for (let i = 0; i < 300; i++) {
-      const z = -14 - Math.random() * 36;
+      const z = -12 - Math.random() * 38;
       const curveX = getRoadCurveX(z);
       const x = curveX + (Math.random() - 0.5) * 3.5;
       const terrainY = getTerrainHeight(x, z);
       const scale = 0.03 + Math.random() * 0.05;
-      gravel.push({ position: [x, -4 + terrainY + 0.1, z], scale });
+      gravel.push({ position: [x, -4 + terrainY + 0.14, z], scale });
     }
     
     return gravel;
-  }, [isLow]);
+  }, [isLow, getRoadCurveX, getTerrainHeight]);
 
   return (
     <group>
