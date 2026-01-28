@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
-import { Line } from '@react-three/drei';
+import { Line, Text } from '@react-three/drei';
 import SunCalc from 'suncalc';
 
 interface SolarPathsProps {
@@ -10,41 +10,62 @@ interface SolarPathsProps {
 }
 
 // Key dates for solar paths
-const SUMMER_SOLSTICE = { month: 5, day: 21 }; // June 21
-const WINTER_SOLSTICE = { month: 11, day: 21 }; // December 21
-const EQUINOX = { month: 2, day: 21 }; // March 21 (same path as September)
+const SUMMER_SOLSTICE = { month: 5, day: 21, label: 'Summer Solstice' }; // June 21
+const WINTER_SOLSTICE = { month: 11, day: 21, label: 'Winter Solstice' }; // December 21
+const EQUINOX = { month: 2, day: 21, label: 'Equinox' }; // March 21 (same path as September)
+
+const PATH_COLOR = '#f59e0b'; // Orange/yellow for all paths
+
+interface PathData {
+  points: THREE.Vector3[];
+  highPoint: THREE.Vector3 | null;
+  label: string;
+}
 
 function calculateSolarPath(
   latitude: number,
   longitude: number,
   month: number,
   day: number,
+  label: string,
   radius: number
-): THREE.Vector3[] {
+): PathData {
   const points: THREE.Vector3[] = [];
   const year = new Date().getFullYear();
   
-  // Sample sun positions throughout the day (every 15 minutes)
-  for (let hour = 0; hour < 24; hour += 0.25) {
+  let highPoint: THREE.Vector3 | null = null;
+  let maxAltitude = -Infinity;
+  
+  // Sample sun positions throughout the full 24h cycle (every 10 minutes)
+  // Include below-horizon points to create continuous arcs
+  for (let hour = 0; hour < 24; hour += 1/6) {
     const date = new Date(year, month, day, Math.floor(hour), (hour % 1) * 60);
     const sunPos = SunCalc.getPosition(date, latitude, longitude);
     
-    // Only include points when sun is above horizon
-    if (sunPos.altitude > 0) {
-      // Convert altitude/azimuth to 3D coordinates
-      // Azimuth: 0 = South, positive = West, negative = East
-      // We need to adjust so North is -Z in our scene
-      const azimuthAdjusted = sunPos.azimuth + Math.PI; // Shift so 0 = North
-      
-      const x = Math.sin(azimuthAdjusted) * Math.cos(sunPos.altitude) * radius;
-      const y = Math.sin(sunPos.altitude) * radius;
-      const z = Math.cos(azimuthAdjusted) * Math.cos(sunPos.altitude) * radius;
-      
-      points.push(new THREE.Vector3(x, y, z));
+    // Convert altitude/azimuth to 3D coordinates
+    // Azimuth: 0 = South, positive = West, negative = East
+    // Adjust so North is -Z in our scene
+    const azimuthAdjusted = sunPos.azimuth + Math.PI;
+    
+    const x = Math.sin(azimuthAdjusted) * Math.cos(sunPos.altitude) * radius;
+    const y = Math.sin(sunPos.altitude) * radius;
+    const z = Math.cos(azimuthAdjusted) * Math.cos(sunPos.altitude) * radius;
+    
+    points.push(new THREE.Vector3(x, y, z));
+    
+    // Track the highest point for label placement
+    if (sunPos.altitude > maxAltitude) {
+      maxAltitude = sunPos.altitude;
+      highPoint = new THREE.Vector3(x, y, z);
     }
   }
   
-  return points;
+  // Close the loop by adding the first point at the end
+  if (points.length > 0) {
+    points.push(points[0].clone());
+  }
+  
+  return { points, highPoint, label };
 }
 
 export function SolarPaths({ latitude, longitude, radius = 40 }: SolarPathsProps) {
@@ -54,6 +75,7 @@ export function SolarPaths({ latitude, longitude, radius = 40 }: SolarPathsProps
       longitude,
       SUMMER_SOLSTICE.month,
       SUMMER_SOLSTICE.day,
+      SUMMER_SOLSTICE.label,
       radius
     );
     
@@ -62,6 +84,7 @@ export function SolarPaths({ latitude, longitude, radius = 40 }: SolarPathsProps
       longitude,
       WINTER_SOLSTICE.month,
       WINTER_SOLSTICE.day,
+      WINTER_SOLSTICE.label,
       radius
     );
     
@@ -70,97 +93,55 @@ export function SolarPaths({ latitude, longitude, radius = 40 }: SolarPathsProps
       longitude,
       EQUINOX.month,
       EQUINOX.day,
+      EQUINOX.label,
       radius
     );
     
-    return { summerPath, winterPath, equinoxPath };
+    return [summerPath, winterPath, equinoxPath];
   }, [latitude, longitude, radius]);
-
-  // Don't render if paths are empty (extreme latitudes during polar night/day)
-  const hasSummer = paths.summerPath.length > 2;
-  const hasWinter = paths.winterPath.length > 2;
-  const hasEquinox = paths.equinoxPath.length > 2;
 
   return (
     <group>
-      {/* Summer solstice path - orange/yellow */}
-      {hasSummer && (
-        <Line
-          points={paths.summerPath}
-          color="#f59e0b"
-          lineWidth={2}
-          dashed
-          dashScale={2}
-          dashSize={0.5}
-          gapSize={0.3}
-        />
-      )}
-      
-      {/* Winter solstice path - blue */}
-      {hasWinter && (
-        <Line
-          points={paths.winterPath}
-          color="#3b82f6"
-          lineWidth={2}
-          dashed
-          dashScale={2}
-          dashSize={0.5}
-          gapSize={0.3}
-        />
-      )}
-      
-      {/* Equinox path (March/September) - white/gray */}
-      {hasEquinox && (
-        <Line
-          points={paths.equinoxPath}
-          color="#94a3b8"
-          lineWidth={2}
-          dashed
-          dashScale={2}
-          dashSize={0.5}
-          gapSize={0.3}
-        />
-      )}
-      
-      {/* Labels at path endpoints - East side */}
-      {hasSummer && paths.summerPath.length > 0 && (
-        <SolarPathLabel
-          position={paths.summerPath[0]}
-          text="Jun 21"
-          color="#f59e0b"
-        />
-      )}
-      {hasWinter && paths.winterPath.length > 0 && (
-        <SolarPathLabel
-          position={paths.winterPath[0]}
-          text="Dec 21"
-          color="#3b82f6"
-        />
-      )}
-      {hasEquinox && paths.equinoxPath.length > 0 && (
-        <SolarPathLabel
-          position={paths.equinoxPath[0]}
-          text="Mar/Sep"
-          color="#94a3b8"
-        />
-      )}
-    </group>
-  );
-}
-
-interface SolarPathLabelProps {
-  position: THREE.Vector3;
-  text: string;
-  color: string;
-}
-
-function SolarPathLabel({ position, text, color }: SolarPathLabelProps) {
-  return (
-    <group position={position}>
-      <mesh>
-        <sphereGeometry args={[0.3, 8, 8]} />
-        <meshBasicMaterial color={color} />
-      </mesh>
+      {paths.map((path, index) => (
+        <group key={index}>
+          {/* Solar path arc */}
+          {path.points.length > 2 && (
+            <Line
+              points={path.points}
+              color={PATH_COLOR}
+              lineWidth={1.5}
+              dashed
+              dashScale={3}
+              dashSize={0.8}
+              gapSize={0.4}
+            />
+          )}
+          
+          {/* Label at high point */}
+          {path.highPoint && (
+            <group position={path.highPoint}>
+              {/* Small marker sphere */}
+              <mesh>
+                <sphereGeometry args={[0.4, 12, 12]} />
+                <meshBasicMaterial color={PATH_COLOR} />
+              </mesh>
+              
+              {/* Text label */}
+              <Text
+                position={[0, 1.5, 0]}
+                fontSize={1.2}
+                color={PATH_COLOR}
+                anchorX="center"
+                anchorY="bottom"
+                outlineWidth={0.08}
+                outlineColor="#000000"
+              >
+                {path.label}
+              </Text>
+            </group>
+          )}
+        </group>
+      ))}
     </group>
   );
 }
