@@ -11,7 +11,7 @@ export function Sun({ position, quality = 'high' }: SunProps) {
   const lightRef = useRef<DirectionalLight>(null);
 
   // Calculate intensity based on altitude (sun height)
-  const intensity = Math.max(0, Math.sin(position.altitude)) * 3.0;
+  const intensity = Math.max(0, Math.sin(position.altitude)) * 4.5;
   const isNight = position.altitude < 0;
 
   // Sun color based on altitude (more orange at sunset/sunrise)
