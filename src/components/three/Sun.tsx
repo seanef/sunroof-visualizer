@@ -89,7 +89,7 @@ export function Sun({ position, quality = 'high' }: SunProps) {
       <hemisphereLight
         color={'hsl(200 60% 75%)'}
         groundColor={'hsl(120 20% 25%)'}
-        intensity={isNight ? 0.18 : 0.12}
+        intensity={isNight ? 0.144 : 0.096}
       />
     </>
   );
