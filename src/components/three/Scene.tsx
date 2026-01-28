@@ -79,8 +79,8 @@ export function Scene({ config, sunPosition }: SceneProps) {
         maxDistance={50}
       />
 
-      {/* Environment for reflections */}
-      {!isMobile && <Environment preset="city" />}
+      {/* Environment for reflections - reduced intensity to not wash out shadows */}
+      {!isMobile && <Environment preset="city" environmentIntensity={0.15} />}
     </Canvas>
   );
 }

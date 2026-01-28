@@ -10,8 +10,8 @@ interface SunProps {
 export function Sun({ position, quality = 'high' }: SunProps) {
   const lightRef = useRef<DirectionalLight>(null);
 
-  // Calculate intensity based on altitude (sun height)
-  const intensity = Math.max(0, Math.sin(position.altitude)) * 4.5;
+  // Calculate intensity based on altitude (sun height) - increased for stronger shadows
+  const intensity = Math.max(0, Math.sin(position.altitude)) * 6.0;
   const isNight = position.altitude < 0;
 
   // Sun color based on altitude (more orange at sunset/sunrise)
@@ -82,14 +82,14 @@ export function Sun({ position, quality = 'high' }: SunProps) {
         </mesh>
       )}
 
-      {/* Ambient light for fill - minimal for high contrast shadows */}
-      <ambientLight intensity={isNight ? 0.08 : 0.032} color={'hsl(210 35% 85%)'} />
+      {/* Ambient light for fill - reduced for higher contrast shadows */}
+      <ambientLight intensity={isNight ? 0.06 : 0.018} color={'hsl(210 35% 85%)'} />
 
-      {/* Hemisphere light for sky/ground color - minimal for high contrast shadows */}
+      {/* Hemisphere light for sky/ground color - reduced for higher contrast shadows */}
       <hemisphereLight
         color={'hsl(200 60% 75%)'}
         groundColor={'hsl(120 20% 25%)'}
-        intensity={isNight ? 0.072 : 0.048}
+        intensity={isNight ? 0.05 : 0.025}
       />
     </>
   );
