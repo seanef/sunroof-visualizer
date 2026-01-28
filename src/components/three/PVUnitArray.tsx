@@ -14,8 +14,8 @@ const UNIT_ACTUAL_WIDTH = 1.58;  // 1580mm = 1.58m
 const UNIT_ACTUAL_DEPTH = 1.489; // 1489mm = 1.489m
 
 // Tiling spacing in meters (actual size minus overlap)
-const UNIT_SPACING_X = 1.54;  // 1580mm - 40mm overlap = 1.54m
-const UNIT_SPACING_Z = 1.446; // 1489mm - 43mm overlap = 1.446m
+const UNIT_SPACING_X = 1.545;  // 1580mm - 35mm overlap = 1.545m
+const UNIT_SPACING_Z = 1.451; // 1489mm - 38mm overlap = 1.451m
 
 export function PVUnitArray({ rows, columns }: PVUnitArrayProps) {
   const materials = useLoader(MTLLoader, '/models/Assembly_simplified_v7.mtl');
