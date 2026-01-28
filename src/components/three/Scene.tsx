@@ -6,6 +6,7 @@ import { PVUnitArray } from './PVUnitArray';
 import { Sun } from './Sun';
 import { Ground } from './Ground';
 import { Compass } from './Compass';
+import { SolarPaths } from './SolarPaths';
 import { SolarConfig, SunPosition } from '@/types/solar';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -61,6 +62,12 @@ export function Scene({ config, sunPosition }: SceneProps) {
 
       {/* Compass indicator */}
       <Compass />
+
+      {/* Solar paths on sky dome */}
+      <SolarPaths 
+        latitude={config.latitude} 
+        longitude={config.longitude} 
+      />
 
       {/* Controls */}
       <OrbitControls
