@@ -112,6 +112,9 @@ const PARKING_Z_END = 12;     // Parking extends 4m outward
 const ROAD_Z_START = 11;      // Road starts overlapping with parking
 const ROAD_Z_END = 50;        // Road extends to edge of scene
 
+// Road/parking surface height above terrain. Needs to sit above the grass detail layer.
+const ROAD_SURFACE_OFFSET = 0.32;
+
 // Get the X offset for the road curve at a given Z position
 function getRoadCurveX(z: number): number {
   // Parking area is straight
@@ -287,7 +290,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
       
       positions.setX(i, worldX);
       positions.setY(i, -worldZ); // localY = -worldZ so after rotation worldZ = -localY = worldZ
-      positions.setZ(i, terrainHeight + 0.12);
+      positions.setZ(i, terrainHeight + ROAD_SURFACE_OFFSET);
     }
     
     geo.computeVertexNormals();
@@ -314,7 +317,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
       
       positions.setX(i, worldX);
       positions.setY(i, -worldZ); // After rotation: worldZ = -localY
-      positions.setZ(i, terrainHeight + 0.12);
+      positions.setZ(i, terrainHeight + ROAD_SURFACE_OFFSET);
     }
     
     geo.computeVertexNormals();
@@ -357,7 +360,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
       const terrainY = getTerrainHeight(x, z);
       const scale = 0.03 + Math.random() * 0.05;
       gravel.push({ 
-        position: [x, -4 + terrainY + 0.12 + scale, z], 
+        position: [x, -4 + terrainY + ROAD_SURFACE_OFFSET + scale, z], 
         scale,
         rotation: [Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI],
         color: Math.random() > 0.5 ? '#8b7355' : '#a09080'
@@ -372,7 +375,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
       const terrainY = getTerrainHeight(x, z);
       const scale = 0.03 + Math.random() * 0.05;
       gravel.push({ 
-        position: [x, -4 + terrainY + 0.12 + scale, z], 
+        position: [x, -4 + terrainY + ROAD_SURFACE_OFFSET + scale, z], 
         scale,
         rotation: [Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI],
         color: Math.random() > 0.5 ? '#8b7355' : '#a09080'
