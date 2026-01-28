@@ -9,9 +9,13 @@ interface PVUnitArrayProps {
   columns: number;
 }
 
-// PV unit footprint in meters (1580x1489 mm)
-const UNIT_WIDTH = 1.54;  // 1580mm - 40mm overlap = 1.54m (x-axis after rotation)
-const UNIT_DEPTH = 1.446; // 1489mm - 43mm overlap = 1.446m (z-axis after rotation)
+// Actual PV unit dimensions in meters (for scaling)
+const UNIT_ACTUAL_WIDTH = 1.58;  // 1580mm = 1.58m
+const UNIT_ACTUAL_DEPTH = 1.489; // 1489mm = 1.489m
+
+// Tiling spacing in meters (actual size minus overlap)
+const UNIT_SPACING_X = 1.54;  // 1580mm - 40mm overlap = 1.54m
+const UNIT_SPACING_Z = 1.446; // 1489mm - 43mm overlap = 1.446m
 
 export function PVUnitArray({ rows, columns }: PVUnitArrayProps) {
   const materials = useLoader(MTLLoader, '/models/Assembly_simplified_v7.mtl');
@@ -34,12 +38,9 @@ export function PVUnitArray({ rows, columns }: PVUnitArrayProps) {
     // Log actual model dimensions for debugging
     console.log('OBJ model size:', size.x, size.y, size.z);
     
-    // After -90° X rotation: Y becomes Z, Z becomes -Y
-    // So original Y dimension becomes the depth, original Z becomes height
-    // We want the footprint to be 1.5m x 1.48m
-    // Calculate scale based on the larger horizontal dimension
+    // Calculate scale based on actual unit dimensions (not spacing)
     const modelFootprint = Math.max(size.x, size.y); // Original horizontal dimensions
-    const targetFootprint = Math.max(UNIT_WIDTH, UNIT_DEPTH);
+    const targetFootprint = Math.max(UNIT_ACTUAL_WIDTH, UNIT_ACTUAL_DEPTH);
     const calculatedScale = targetFootprint / modelFootprint;
     
     // Offset all children to center the model at origin
@@ -56,21 +57,21 @@ export function PVUnitArray({ rows, columns }: PVUnitArrayProps) {
   const instances = useMemo(() => {
     const result: JSX.Element[] = [];
     
-    // Calculate total array dimensions
-    const totalWidth = columns * UNIT_WIDTH;
-    const totalDepth = rows * UNIT_DEPTH;
+    // Calculate total array dimensions using spacing
+    const totalWidth = columns * UNIT_SPACING_X;
+    const totalDepth = rows * UNIT_SPACING_Z;
     
     // Center the array on the roof
-    const startX = -totalWidth / 2 + UNIT_WIDTH / 2;
-    const startZ = -totalDepth / 2 + UNIT_DEPTH / 2;
+    const startX = -totalWidth / 2 + UNIT_SPACING_X / 2;
+    const startZ = -totalDepth / 2 + UNIT_SPACING_Z / 2;
     
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < columns; col++) {
         const clone = centeredObj.clone(true);
         
-        // Position each unit edge-to-edge
-        const x = startX + col * UNIT_WIDTH;
-        const z = startZ + row * UNIT_DEPTH;
+        // Position each unit using spacing (creates overlap)
+        const x = startX + col * UNIT_SPACING_X;
+        const z = startZ + row * UNIT_SPACING_Z;
         
         clone.position.set(x, 0.05, z);
         clone.scale.set(scale, scale, scale);
