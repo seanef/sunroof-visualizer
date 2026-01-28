@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useLoader } from '@react-three/fiber';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
-import { Box3, Vector3 } from 'three';
+import { Box3, Vector3, Mesh } from 'three';
 
 interface PVUnitArrayProps {
   rows: number;
@@ -79,9 +79,9 @@ export function PVUnitArray({ rows, columns }: PVUnitArrayProps) {
         // Rotate 90 degrees around X-axis so panels lay flat with lamellas vertical
         clone.rotation.set(-Math.PI / 2, 0, 0);
         
-        // Enable shadows
+        // Enable shadows on all mesh children
         clone.traverse((child) => {
-          if ('castShadow' in child) {
+          if (child instanceof Mesh) {
             child.castShadow = true;
             child.receiveShadow = true;
           }
