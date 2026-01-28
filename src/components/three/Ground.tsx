@@ -106,9 +106,9 @@ function GrassCluster({ position, density = 8 }: { position: [number, number, nu
 }
 
 // Road/parking configuration constants
-// Door is on the +Z side (z ≈ +7.5), so road/parking/gravel go on positive Z
-const PARKING_Z_START = 8;    // Just past the building wall
-const PARKING_Z_END = 12;     // Parking extends 4m outward
+// Door is on the +Z side (z ≈ +7.65 with wall thickness), so road/parking/gravel go on positive Z
+const PARKING_Z_START = 7.65; // At the building wall (depth/2 + wallThickness/2 = 7.5 + 0.15)
+const PARKING_Z_END = 12;     // Parking extends outward
 const ROAD_Z_START = 11;      // Road starts overlapping with parking
 const ROAD_Z_END = 50;        // Road extends to edge of scene
 

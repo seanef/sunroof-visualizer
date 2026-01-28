@@ -202,11 +202,16 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
   const sideWindowPositions = generateWindowPositions(depth, false);
   const backWindowPositions = generateWindowPositions(width, false);
 
+  // Calculate wall positions so corners meet properly
+  // Front/back walls span the full width including corners
+  // Side walls fit between front/back walls (shorter by wallThickness on each end)
+  const sideWallLength = depth - wallThickness; // Fits between front and back walls
+
   return (
     <group>
       {/* Building walls */}
-      {/* Front wall with door and windows - offset down slightly to avoid z-fighting with roof */}
-      <group position={[0, -buildingHeight / 2 - 0.01, depth / 2]}>
+      {/* Front wall with door and windows - spans full width for proper corners */}
+      <group position={[0, -buildingHeight / 2 - 0.01, depth / 2 - wallThickness / 2]}>
         {/* Solid wall behind openings */}
         <mesh castShadow receiveShadow>
           <boxGeometry args={[width, buildingHeight, wallThickness]} />
@@ -239,8 +244,8 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
         ))}
       </group>
 
-      {/* Back wall */}
-      <group position={[0, -buildingHeight / 2 - 0.01, -depth / 2]}>
+      {/* Back wall - spans full width for proper corners */}
+      <group position={[0, -buildingHeight / 2 - 0.01, -depth / 2 + wallThickness / 2]}>
         <mesh castShadow receiveShadow>
           <boxGeometry args={[width, buildingHeight, wallThickness]} />
           <meshStandardMaterial color="#e8e0d5" roughness={0.9} />
@@ -255,10 +260,10 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
         ))}
       </group>
 
-      {/* Left wall with windows */}
-      <group position={[-width / 2, -buildingHeight / 2 - 0.01, 0]} rotation={[0, Math.PI / 2, 0]}>
+      {/* Left wall with windows - fits between front and back walls */}
+      <group position={[-width / 2 + wallThickness / 2, -buildingHeight / 2 - 0.01, 0]} rotation={[0, Math.PI / 2, 0]}>
         <mesh castShadow receiveShadow>
-          <boxGeometry args={[depth, buildingHeight, wallThickness]} />
+          <boxGeometry args={[sideWallLength, buildingHeight, wallThickness]} />
           <meshStandardMaterial color="#d8d0c5" roughness={0.9} />
         </mesh>
         {/* Windows on left wall */}
@@ -271,10 +276,10 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
         ))}
       </group>
 
-      {/* Right wall with windows - offset down slightly to avoid z-fighting with roof */}
-      <group position={[width / 2, -buildingHeight / 2 - 0.01, 0]} rotation={[0, -Math.PI / 2, 0]}>
+      {/* Right wall with windows - fits between front and back walls */}
+      <group position={[width / 2 - wallThickness / 2, -buildingHeight / 2 - 0.01, 0]} rotation={[0, -Math.PI / 2, 0]}>
         <mesh castShadow receiveShadow>
-          <boxGeometry args={[depth, buildingHeight, wallThickness]} />
+          <boxGeometry args={[sideWallLength, buildingHeight, wallThickness]} />
           <meshStandardMaterial color="#d8d0c5" roughness={0.9} />
         </mesh>
         {/* Windows on right wall */}
