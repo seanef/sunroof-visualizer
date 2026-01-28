@@ -246,32 +246,69 @@ export function Ground({ quality = 'high' }: GroundProps) {
     // Create vertex colors for grass variation
     const colors = new Float32Array(positions.count * 3);
     
+    // Seed random patches
+    const patchCenters = [
+      { x: -15, z: -20, radius: 12, hue: 0.08 },  // Yellowish patch
+      { x: 20, z: 15, radius: 10, hue: -0.05 },   // Darker patch
+      { x: -25, z: 10, radius: 8, hue: 0.1 },     // Dry grass patch
+      { x: 10, z: -25, radius: 15, hue: -0.03 },  // Lush dark green
+      { x: 30, z: -10, radius: 9, hue: 0.06 },    // Lighter patch
+      { x: -10, z: 25, radius: 11, hue: -0.04 },  // Deep green
+      { x: 25, z: 25, radius: 7, hue: 0.12 },     // Dried patch
+      { x: -30, z: -15, radius: 10, hue: 0.04 },  // Slight yellow
+    ];
+    
     for (let i = 0; i < positions.count; i++) {
       const x = positions.getX(i);
       const y = positions.getY(i);
-      // After mesh rotation (-PI/2 on X), localY becomes -worldZ
-      // So worldZ = -localY = -y, meaning localY = -worldZ
       const worldZ = -y;
       
       const height = getTerrainHeight(x, worldZ);
       positions.setZ(i, height);
       
-      // Generate varied grass colors using noise patterns
-      const noise1 = Math.sin(x * 0.15) * Math.cos(worldZ * 0.12) * 0.5 + 0.5;
-      const noise2 = Math.sin(x * 0.08 + 2) * Math.sin(worldZ * 0.1 + 1) * 0.5 + 0.5;
-      const noise3 = Math.cos(x * 0.25 + worldZ * 0.2) * 0.5 + 0.5;
-      const combined = (noise1 * 0.4 + noise2 * 0.35 + noise3 * 0.25);
+      // Large-scale gradient noise for broad color shifts
+      const gradient1 = Math.sin(x * 0.04 + worldZ * 0.03) * 0.5 + 0.5;
+      const gradient2 = Math.cos(x * 0.025 - worldZ * 0.04 + 1.5) * 0.5 + 0.5;
       
-      // Base grass green with variations
-      const baseR = 0.24; // #3d = 61/255
-      const baseG = 0.36; // #5c = 92/255
-      const baseB = 0.21; // #35 = 53/255
+      // Medium-scale patches
+      const patch1 = Math.sin(x * 0.12) * Math.cos(worldZ * 0.1) * 0.5 + 0.5;
+      const patch2 = Math.cos(x * 0.08 + 2) * Math.sin(worldZ * 0.15 - 1) * 0.5 + 0.5;
       
-      // Vary between darker and lighter greens
-      const variation = combined * 0.3 - 0.15; // -0.15 to +0.15 range
-      colors[i * 3] = Math.max(0.15, Math.min(0.35, baseR + variation * 0.5));
-      colors[i * 3 + 1] = Math.max(0.28, Math.min(0.50, baseG + variation));
-      colors[i * 3 + 2] = Math.max(0.12, Math.min(0.30, baseB + variation * 0.4));
+      // Fine detail noise
+      const detail = Math.sin(x * 0.3 + worldZ * 0.25) * Math.cos(x * 0.2 - worldZ * 0.35) * 0.5 + 0.5;
+      
+      // Calculate patch influence
+      let patchInfluence = 0;
+      for (const patch of patchCenters) {
+        const dist = Math.sqrt((x - patch.x) ** 2 + (worldZ - patch.z) ** 2);
+        if (dist < patch.radius) {
+          const falloff = 1 - (dist / patch.radius);
+          const smoothFalloff = falloff * falloff * (3 - 2 * falloff); // Smoothstep
+          patchInfluence += patch.hue * smoothFalloff;
+        }
+      }
+      
+      // Combine all variations
+      const combined = gradient1 * 0.25 + gradient2 * 0.2 + patch1 * 0.2 + patch2 * 0.15 + detail * 0.2;
+      
+      // Base grass colors - vibrant green
+      const baseR = 0.24;
+      const baseG = 0.42;
+      const baseB = 0.20;
+      
+      // Apply variation - shift towards yellow-green or blue-green
+      const variation = (combined - 0.5) * 0.4 + patchInfluence;
+      
+      // Red shifts more for yellow/dry grass effect
+      const r = Math.max(0.12, Math.min(0.45, baseR + variation * 0.8 + patchInfluence * 0.3));
+      // Green varies for light/dark patches  
+      const g = Math.max(0.25, Math.min(0.55, baseG + variation * 0.5));
+      // Blue inversely for warmth variation
+      const b = Math.max(0.08, Math.min(0.32, baseB - variation * 0.3));
+      
+      colors[i * 3] = r;
+      colors[i * 3 + 1] = g;
+      colors[i * 3 + 2] = b;
     }
 
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
