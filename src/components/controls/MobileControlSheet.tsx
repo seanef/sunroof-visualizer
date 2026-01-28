@@ -98,8 +98,10 @@ export function MobileControlSheet({ config, sunPosition, onConfigChange }: Mobi
           <UnitControls
             unitRows={config.unitRows}
             unitColumns={config.unitColumns}
+            arrayAzimuth={config.arrayAzimuth}
             onUnitRowsChange={(unitRows) => onConfigChange({ unitRows })}
             onUnitColumnsChange={(unitColumns) => onConfigChange({ unitColumns })}
+            onArrayAzimuthChange={(arrayAzimuth) => onConfigChange({ arrayAzimuth })}
           />
         </div>
 

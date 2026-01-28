@@ -52,6 +52,7 @@ export function Scene({ config, sunPosition }: SceneProps) {
         <PVUnitArray
           rows={config.unitRows}
           columns={config.unitColumns}
+          azimuth={config.arrayAzimuth}
         />
       </Suspense>
 
