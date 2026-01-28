@@ -242,7 +242,10 @@ export function Ground({ quality = 'high' }: GroundProps) {
 
     for (let i = 0; i < positions.count; i++) {
       const x = positions.getX(i);
-      const z = positions.getY(i); // Y in plane geometry before rotation
+      // PlaneGeometry is in the XY plane. We rotate the mesh by -PI/2 around X,
+      // which makes worldZ = -localY. Use this conversion so terrain/road/gravel
+      // all agree on the same world coordinate system.
+      const z = -positions.getY(i);
       
       const height = getTerrainHeight(x, z);
       positions.setZ(i, height);
@@ -275,7 +278,9 @@ export function Ground({ quality = 'high' }: GroundProps) {
       const terrainY = getTerrainHeight(worldX, worldZ);
       
       positions.setX(i, worldX);
-      positions.setY(i, worldZ);
+      // After mesh rotation (-PI/2 on X), worldZ = -localY.
+      // Store -worldZ in localY so the road appears at the intended +Z location.
+      positions.setY(i, -worldZ);
       positions.setZ(i, terrainY + 0.12);
     }
     
@@ -303,7 +308,8 @@ export function Ground({ quality = 'high' }: GroundProps) {
       const terrainY = getTerrainHeight(worldX, worldZ);
       
       positions.setX(i, worldX);
-      positions.setY(i, worldZ);
+      // After mesh rotation (-PI/2 on X), worldZ = -localY.
+      positions.setY(i, -worldZ);
       positions.setZ(i, terrainY + 0.12);
     }
     
