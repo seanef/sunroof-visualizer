@@ -100,9 +100,9 @@ export function SolarPaths({ latitude, longitude, radius = 40 }: SolarPathsProps
   }, [latitude, longitude, radius]);
 
   return (
-    <group>
+    <group key={`${latitude}-${longitude}`}>
       {paths.map((path, index) => (
-        <group key={index}>
+        <group key={`${path.label}-${latitude}-${longitude}`}>
           {/* Solar path arc */}
           {path.points.length > 2 && (
             <Line
