@@ -4,9 +4,10 @@ import { SunPosition } from '@/types/solar';
 
 interface SunProps {
   position: SunPosition;
+  quality?: 'high' | 'low';
 }
 
-export function Sun({ position }: SunProps) {
+export function Sun({ position, quality = 'high' }: SunProps) {
   const lightRef = useRef<DirectionalLight>(null);
 
   // Calculate intensity based on altitude (sun height)
@@ -31,8 +32,8 @@ export function Sun({ position }: SunProps) {
         intensity={intensity}
         color={getColor()}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={quality === 'low' ? 1024 : 2048}
+        shadow-mapSize-height={quality === 'low' ? 1024 : 2048}
         shadow-camera-far={100}
         shadow-camera-left={-20}
         shadow-camera-right={20}
