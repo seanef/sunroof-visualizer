@@ -13,9 +13,6 @@ interface PVUnitArrayProps {
 const UNIT_WIDTH = 1.5;  // 1500mm = 1.5m (x-axis after rotation)
 const UNIT_DEPTH = 1.48; // 1480mm = 1.48m (z-axis after rotation)
 
-// Scale factor to convert OBJ units (mm) to scene units (m)
-const SCALE = 0.001;
-
 export function PVUnitArray({ rows, columns }: PVUnitArrayProps) {
   const materials = useLoader(MTLLoader, '/models/Assembly_simplified_v7.mtl');
   const obj = useLoader(OBJLoader, '/models/Assembly_simplified_v7.obj', (loader) => {
@@ -23,14 +20,27 @@ export function PVUnitArray({ rows, columns }: PVUnitArrayProps) {
     loader.setMaterials(materials);
   });
 
-  // Center the original geometry once and apply rotation
-  const centeredObj = useMemo(() => {
+  // Center the original geometry and calculate proper scale
+  const { centeredObj, scale } = useMemo(() => {
     const clone = obj.clone(true);
     
-    // Calculate bounding box to find center
+    // Calculate bounding box
     const box = new Box3().setFromObject(clone);
     const center = new Vector3();
+    const size = new Vector3();
     box.getCenter(center);
+    box.getSize(size);
+    
+    // Log actual model dimensions for debugging
+    console.log('OBJ model size:', size.x, size.y, size.z);
+    
+    // After -90° X rotation: Y becomes Z, Z becomes -Y
+    // So original Y dimension becomes the depth, original Z becomes height
+    // We want the footprint to be 1.5m x 1.48m
+    // Calculate scale based on the larger horizontal dimension
+    const modelFootprint = Math.max(size.x, size.y); // Original horizontal dimensions
+    const targetFootprint = Math.max(UNIT_WIDTH, UNIT_DEPTH);
+    const calculatedScale = targetFootprint / modelFootprint;
     
     // Offset all children to center the model at origin
     clone.traverse((child) => {
@@ -39,7 +49,7 @@ export function PVUnitArray({ rows, columns }: PVUnitArrayProps) {
       }
     });
     
-    return clone;
+    return { centeredObj: clone, scale: calculatedScale };
   }, [obj]);
 
   // Create tiled instances
@@ -63,7 +73,7 @@ export function PVUnitArray({ rows, columns }: PVUnitArrayProps) {
         const z = startZ + row * UNIT_DEPTH;
         
         clone.position.set(x, 0.05, z);
-        clone.scale.set(SCALE, SCALE, SCALE);
+        clone.scale.set(scale, scale, scale);
         
         // Rotate 90 degrees around X-axis so panels lay flat with lamellas vertical
         clone.rotation.set(-Math.PI / 2, 0, 0);
