@@ -105,16 +105,20 @@ function GrassCluster({ position, density = 8 }: { position: [number, number, nu
   );
 }
 
+// Road/parking configuration constants
+// Door is on the +Z side (z ≈ +7.5), so road/parking/gravel go on positive Z
+const PARKING_Z_START = 8;    // Just past the building wall
+const PARKING_Z_END = 12;     // Parking extends 4m outward
+const ROAD_Z_START = 11;      // Road starts overlapping with parking
+const ROAD_Z_END = 50;        // Road extends to edge of scene
+
 // Get the X offset for the road curve at a given Z position
-// Door-side is z-negative in this scene:
-//   parking sits adjacent to the building at z≈-7.5 and extends outward to z≈-11.8
-//   road comes from the scene edge at z=-50 and meets parking at z≈-11.8
 function getRoadCurveX(z: number): number {
   // Parking area is straight
-  if (z >= -11.8) return 0;
+  if (z <= PARKING_Z_END) return 0;
 
-  // Gentle S-curve using sine waves (road goes from z=-50 to z≈-11.8)
-  const t = (-11.8 - z) / 38.2; // Normalize to 0-1
+  // Gentle S-curve using sine waves
+  const t = (z - PARKING_Z_END) / (ROAD_Z_END - PARKING_Z_END);
   return Math.sin(t * Math.PI * 1.5) * 2.5 + Math.sin(t * Math.PI * 3) * 0.8;
 }
 
@@ -128,28 +132,25 @@ function getTerrainHeight(x: number, z: number): number {
   const distFromCenter = Math.sqrt(x * x + z * z);
   const flattenFactor = Math.min(1, distFromCenter / 15);
   
-  // Extra flattening for road corridor (negative z)
-  const roadFlatten = z < -8 ? Math.max(0, 1 - Math.abs(x - getRoadCurveX(z)) / 6) * 0.7 : 0;
+  // Extra flattening for road corridor (positive z, door side)
+  const roadFlatten = z > PARKING_Z_START ? Math.max(0, 1 - Math.abs(x - getRoadCurveX(z)) / 6) * 0.7 : 0;
   
   return (noise1 + noise2 + noise3) * flattenFactor * (1 - roadFlatten);
 }
 
 // Check if a point is on the road or parking area (with curve)
 function isOnRoad(x: number, z: number): boolean {
-  // Parking area adjacent to the door-side wall (centered at x=0, z=-11.8 to z=-7.8)
-  // (building wall is around z=-7.5; we keep a small gap to avoid intersections)
   const parkingWidth = 8;
-  const parkingStart = -11.8;
-  const parkingEnd = -7.8;
+  const roadWidth = 4;
   
-  if (Math.abs(x) <= parkingWidth / 2 && z >= parkingStart && z <= parkingEnd) {
+  // Parking area (positive z, adjacent to door)
+  if (Math.abs(x) <= parkingWidth / 2 && z >= PARKING_Z_START && z <= PARKING_Z_END) {
     return true;
   }
   
-  // Curved road from parking to edge of scene (z≈-11.8 to z=-50)
-  if (z < parkingStart && z >= -50) {
+  // Curved road from parking to edge of scene
+  if (z >= ROAD_Z_START && z <= ROAD_Z_END) {
     const roadCenterX = getRoadCurveX(z);
-    const roadWidth = 4;
     if (Math.abs(x - roadCenterX) <= roadWidth / 2 + 0.5) {
       return true;
     }
@@ -251,27 +252,26 @@ export function Ground({ quality = 'high' }: GroundProps) {
     return geo;
   }, [isLow]);
 
-  // Create curved road geometry that follows terrain
-  // Road goes from z=-9 (overlaps with parking) to z=-50 (scene edge)
+  // Create curved road geometry that follows terrain (positive Z, door side)
   const roadGeometry = useMemo(() => {
     const segmentsZ = 50;
     const segmentsX = 4;
     const roadWidth = 4;
-    const roadLength = 42; // Extended to overlap with parking
+    const roadLength = ROAD_Z_END - ROAD_Z_START;
+    const roadCenterZ = (ROAD_Z_START + ROAD_Z_END) / 2;
     
     const geo = new THREE.PlaneGeometry(roadWidth, roadLength, segmentsX, segmentsZ);
     const positions = geo.attributes.position;
     
     for (let i = 0; i < positions.count; i++) {
-      const localX = positions.getX(i); // -2 to 2
-      const localZ = positions.getY(i); // -21 to 21
+      const localX = positions.getX(i);
+      const localZ = positions.getY(i);
       
-      // Map to world coordinates (center at z=-29, so range is z=-50 to z=-8)
-      const worldZ = -29 + localZ;
+      // Map to world coordinates (positive Z)
+      const worldZ = roadCenterZ + localZ;
       const curveX = getRoadCurveX(worldZ);
       const worldX = curveX + localX;
       
-      // Get terrain height and add larger offset to stay above ground/grass
       const terrainY = getTerrainHeight(worldX, worldZ);
       
       positions.setX(i, worldX);
@@ -283,11 +283,14 @@ export function Ground({ quality = 'high' }: GroundProps) {
     return geo;
   }, [isLow]);
 
-  // Create parking area geometry - adjacent to the door-side wall (z=-11.8 to z=-7.8)
+  // Create parking area geometry (positive Z, adjacent to door)
   const parkingGeometry = useMemo(() => {
     const segmentsX = 8;
     const segmentsZ = 4;
-    const geo = new THREE.PlaneGeometry(8, 4, segmentsX, segmentsZ);
+    const parkingLength = PARKING_Z_END - PARKING_Z_START;
+    const parkingCenterZ = (PARKING_Z_START + PARKING_Z_END) / 2;
+    
+    const geo = new THREE.PlaneGeometry(8, parkingLength, segmentsX, segmentsZ);
     const positions = geo.attributes.position;
     
     for (let i = 0; i < positions.count; i++) {
@@ -295,7 +298,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
       const localZ = positions.getY(i);
       
       const worldX = localX;
-      const worldZ = -9.8 + localZ; // Center at z=-9.8, so range is z=-11.8 to z=-7.8
+      const worldZ = parkingCenterZ + localZ;
       
       const terrainY = getTerrainHeight(worldX, worldZ);
       
@@ -306,7 +309,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
     
     geo.computeVertexNormals();
     return geo;
-  }, [getTerrainHeight, isLow]);
+  }, [isLow]);
 
   const stones = useMemo(() => {
     if (isLow) return [] as Array<{ position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] }>;
@@ -331,17 +334,16 @@ export function Ground({ quality = 'high' }: GroundProps) {
     }).filter(Boolean) as Array<{ position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] }>;
   }, [isLow]);
 
-  // Generate gravel stones for road texture - only on door side (negative z)
-  // Position gravel at same height as road surface (terrainY + 0.12) plus small offset
+  // Generate gravel stones for road texture (positive Z, door side)
   const roadGravel = useMemo(() => {
     if (isLow) return [];
     
     const gravel: Array<{ position: [number, number, number]; scale: number; rotation: [number, number, number]; color: string }> = [];
     
-    // Parking area gravel (z=-11.8 to z=-7.8) - must be negative z only
+    // Parking area gravel (positive Z)
     for (let i = 0; i < 200; i++) {
       const x = (Math.random() - 0.5) * 7.5;
-      const z = -7.8 - Math.random() * 4; // z from -7.8 to -11.8
+      const z = PARKING_Z_START + Math.random() * (PARKING_Z_END - PARKING_Z_START);
       const terrainY = getTerrainHeight(x, z);
       const scale = 0.03 + Math.random() * 0.05;
       gravel.push({ 
@@ -352,9 +354,9 @@ export function Ground({ quality = 'high' }: GroundProps) {
       });
     }
     
-    // Road gravel - follow curve (z=-8 to z=-50) - must be negative z only
+    // Road gravel - follow curve (positive Z)
     for (let i = 0; i < 300; i++) {
-      const z = -8 - Math.random() * 42; // z from -8 to -50
+      const z = ROAD_Z_START + Math.random() * (ROAD_Z_END - ROAD_Z_START);
       const curveX = getRoadCurveX(z);
       const x = curveX + (Math.random() - 0.5) * 3.5;
       const terrainY = getTerrainHeight(x, z);
