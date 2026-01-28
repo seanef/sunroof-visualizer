@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
+import { useLoader } from '@react-three/fiber';
 import { RoofMaterial } from '@/types/solar';
 import * as THREE from 'three';
+import gravelTextureImg from '@/assets/textures/gravel-roof.jpg';
 
 interface RoofProps {
   material: RoofMaterial;
@@ -22,7 +24,14 @@ const ROOF_ROUGHNESS: Record<RoofMaterial, number> = {
   bitumen: 0.7,
 };
 
+// Gravel tile size in meters (400mm x 500mm)
+const GRAVEL_TILE_WIDTH = 0.4;
+const GRAVEL_TILE_DEPTH = 0.5;
+
 export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
+  // Load gravel texture image
+  const gravelTexture = useLoader(THREE.TextureLoader, gravelTextureImg);
+  
   const texture = useMemo(() => {
     if (material === 'green') {
       // Create grass-like texture
@@ -50,34 +59,17 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
     }
     
     if (material === 'gravel') {
-      const canvas = document.createElement('canvas');
-      canvas.width = 256;
-      canvas.height = 256;
-      const ctx = canvas.getContext('2d')!;
-      
-      ctx.fillStyle = ROOF_COLORS.gravel;
-      ctx.fillRect(0, 0, 256, 256);
-      
-      // Add gravel stones
-      for (let i = 0; i < 500; i++) {
-        const x = Math.random() * 256;
-        const y = Math.random() * 256;
-        const size = Math.random() * 8 + 2;
-        const shade = Math.random() * 60 - 30;
-        ctx.fillStyle = `rgb(${139 + shade}, ${115 + shade}, ${85 + shade})`;
-        ctx.beginPath();
-        ctx.ellipse(x, y, size, size * 0.7, Math.random() * Math.PI, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      
-      const tex = new THREE.CanvasTexture(canvas);
+      // Use the loaded gravel texture image
+      const tex = gravelTexture.clone();
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(6, 6);
+      // Calculate repeats based on tile size (400mm x 500mm)
+      tex.repeat.set(width / GRAVEL_TILE_WIDTH, depth / GRAVEL_TILE_DEPTH);
+      tex.needsUpdate = true;
       return tex;
     }
     
     return null;
-  }, [material]);
+  }, [material, width, depth, gravelTexture]);
 
   const buildingHeight = 4;
   const wallThickness = 0.3;
