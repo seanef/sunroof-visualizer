@@ -1,12 +1,12 @@
 import { Text } from '@react-three/drei';
 
 export function Compass() {
-  const radius = 8;
-  const labelOffset = radius + 1.5;
-  const arrowLength = 2;
+  const radius = 4;
+  const labelOffset = radius + 0.75;
+  const arrowLength = 1;
 
   return (
-    <group position={[-12, 0.02, 12]}>
+    <group position={[-10, 0.02, 10]} scale={0.5}>
       {/* Compass circle */}
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[radius - 0.3, radius, 64]} />
