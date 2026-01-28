@@ -43,13 +43,12 @@ function calculateSolarPath(
     const sunPos = SunCalc.getPosition(date, latitude, longitude);
     
     // Convert altitude/azimuth to 3D coordinates
-    // Azimuth: 0 = South, positive = West, negative = East
-    // Adjust so North is -Z in our scene
-    const azimuthAdjusted = sunPos.azimuth + Math.PI;
-    
-    const x = Math.sin(azimuthAdjusted) * Math.cos(sunPos.altitude) * radius;
+    // Match the coordinate system used in useSunPosition.ts:
+    // Azimuth: 0 = south, positive = west, negative = east
+    // This places the sun paths on the south side (+Z direction)
+    const x = -Math.sin(sunPos.azimuth) * Math.cos(sunPos.altitude) * radius;
     const y = Math.sin(sunPos.altitude) * radius;
-    const z = Math.cos(azimuthAdjusted) * Math.cos(sunPos.altitude) * radius;
+    const z = Math.cos(sunPos.azimuth) * Math.cos(sunPos.altitude) * radius;
     
     points.push(new THREE.Vector3(x, y, z));
     
