@@ -11,7 +11,7 @@ interface PVUnitArrayProps {
 
 // PV unit footprint in meters (1580x1489 mm)
 const UNIT_WIDTH = 1.58;  // 1580mm = 1.58m (x-axis after rotation)
-const UNIT_DEPTH = 1.474; // 1489mm - 15mm overlap = 1.474m (z-axis after rotation)
+const UNIT_DEPTH = 1.469; // 1489mm - 20mm overlap = 1.469m (z-axis after rotation)
 
 export function PVUnitArray({ rows, columns }: PVUnitArrayProps) {
   const materials = useLoader(MTLLoader, '/models/Assembly_simplified_v7.mtl');
