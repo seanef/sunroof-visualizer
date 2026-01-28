@@ -112,8 +112,8 @@ const PARKING_Z_END = 12;     // Parking extends 4m outward
 const ROAD_Z_START = 11;      // Road starts overlapping with parking
 const ROAD_Z_END = 50;        // Road extends to edge of scene
 
-// Road/parking surface height above terrain. Small offset to sit visibly on ground without floating.
-const ROAD_SURFACE_OFFSET = 0.06;
+// Road/parking surface height above terrain. Small offset to sit visibly on ground.
+const ROAD_SURFACE_OFFSET = 0.08;
 
 // Get the X offset for the road curve at a given Z position
 function getRoadCurveX(z: number): number {
@@ -401,19 +401,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
         />
       </mesh>
 
-      {/* Grass detail layer - slightly above terrain, excludes road area */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -3.99, 0]}
-        receiveShadow
-      >
-        <ringGeometry args={[0, 45, 64]} />
-        <meshStandardMaterial
-          color="#4a6b3f"
-          roughness={0.9}
-          metalness={0}
-        />
-      </mesh>
+      {/* Grass detail layer removed - was occluding road/parking surfaces */}
 
       {/* Curved gravel road from edge to parking - follows terrain */}
       <mesh
