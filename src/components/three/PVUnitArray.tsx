@@ -9,9 +9,9 @@ interface PVUnitArrayProps {
   columns: number;
 }
 
-// PV unit footprint in meters (1500x1480 mm)
-const UNIT_WIDTH = 1.5;  // 1500mm = 1.5m (x-axis after rotation)
-const UNIT_DEPTH = 1.48; // 1480mm = 1.48m (z-axis after rotation)
+// PV unit footprint in meters (1580x1489 mm)
+const UNIT_WIDTH = 1.58;  // 1580mm = 1.58m (x-axis after rotation)
+const UNIT_DEPTH = 1.489; // 1489mm = 1.489m (z-axis after rotation)
 
 export function PVUnitArray({ rows, columns }: PVUnitArrayProps) {
   const materials = useLoader(MTLLoader, '/models/Assembly_simplified_v7.mtl');
