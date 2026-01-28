@@ -55,6 +55,34 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
       return tex;
     }
     
+    if (material === 'pvc') {
+      // Create subtle, even texture for PVC membrane
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d')!;
+      
+      // Light grey base
+      ctx.fillStyle = '#e0e0e0';
+      ctx.fillRect(0, 0, 256, 256);
+      
+      // Add subtle, even noise texture
+      for (let i = 0; i < 8000; i++) {
+        const x = Math.random() * 256;
+        const y = Math.random() * 256;
+        const shade = Math.floor(Math.random() * 20 - 10);
+        const baseGrey = 224; // Light grey base value
+        const grey = Math.max(200, Math.min(240, baseGrey + shade));
+        ctx.fillStyle = `rgb(${grey}, ${grey}, ${grey})`;
+        ctx.fillRect(x, y, 1, 1);
+      }
+      
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(8, 8);
+      return tex;
+    }
+    
     return null;
   }, [material, width, depth, gravelTexture, greenTexture]);
 
