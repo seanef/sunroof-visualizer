@@ -82,14 +82,14 @@ export function Sun({ position, quality = 'high' }: SunProps) {
         </mesh>
       )}
 
-      {/* Ambient light for fill */}
-      <ambientLight intensity={isNight ? 0.28 : 0.3} color={'hsl(210 35% 85%)'} />
+      {/* Ambient light for fill - reduced for darker shadows */}
+      <ambientLight intensity={isNight ? 0.25 : 0.15} color={'hsl(210 35% 85%)'} />
 
-      {/* Hemisphere light for sky/ground color */}
+      {/* Hemisphere light for sky/ground color - reduced for more shadow contrast */}
       <hemisphereLight
         color={'hsl(200 60% 75%)'}
         groundColor={'hsl(120 20% 25%)'}
-        intensity={isNight ? 0.22 : 0.4}
+        intensity={isNight ? 0.2 : 0.25}
       />
     </>
   );
