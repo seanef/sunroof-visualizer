@@ -134,27 +134,33 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
   const generateWindowPositions = (wallLength: number, hasDoor: boolean = false): number[] => {
     const positions: number[] = [];
     const halfLength = wallLength / 2;
+    const edgeMargin = 0.8; // Minimum distance from wall edge to window center
     
     if (hasDoor) {
-      // For wall with door: windows start 1m + half window size from door edges
+      // For wall with door: windows start 1m from door edges (edge to edge)
       const doorHalfWidth = doorWidth / 2 + 0.1; // Include door frame
-      const firstWindowOffset = doorHalfWidth + doorClearance + windowSize / 2;
+      const firstWindowCenter = doorHalfWidth + doorClearance + windowSize / 2;
       
-      // Left side of door
-      for (let x = -firstWindowOffset; x >= -halfLength + windowSize / 2 + 0.5; x -= windowSpacing) {
+      // Left side of door (going negative)
+      for (let x = -firstWindowCenter; x >= -halfLength + edgeMargin; x -= windowSpacing) {
         positions.push(x);
       }
-      // Right side of door
-      for (let x = firstWindowOffset; x <= halfLength - windowSize / 2 - 0.5; x += windowSpacing) {
+      // Right side of door (going positive)
+      for (let x = firstWindowCenter; x <= halfLength - edgeMargin; x += windowSpacing) {
         positions.push(x);
       }
     } else {
-      // For walls without door: evenly space windows
-      const numWindows = Math.floor((wallLength - 1) / windowSpacing);
-      const startOffset = (wallLength - (numWindows - 1) * windowSpacing) / 2 - halfLength;
+      // For walls without door: place windows every 2.5m, centered on the wall
+      // Start from center and work outward
+      const maxOffset = halfLength - edgeMargin;
       
-      for (let i = 0; i < numWindows; i++) {
-        positions.push(startOffset + i * windowSpacing);
+      // Center window at 0
+      positions.push(0);
+      
+      // Add windows on both sides
+      for (let offset = windowSpacing; offset <= maxOffset; offset += windowSpacing) {
+        positions.push(-offset);
+        positions.push(offset);
       }
     }
     
