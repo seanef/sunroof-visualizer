@@ -336,27 +336,35 @@ export function Ground({ quality = 'high' }: GroundProps) {
   const roadGravel = useMemo(() => {
     if (isLow) return [];
     
-    const gravel: Array<{ position: [number, number, number]; scale: number }> = [];
+    const gravel: Array<{ position: [number, number, number]; scale: number; rotation: [number, number, number]; color: string }> = [];
     
-    // Parking area gravel (z=-11.8 to z=-7.8)
+    // Parking area gravel (z=-11.8 to z=-7.8) - must be negative z only
     for (let i = 0; i < 200; i++) {
       const x = (Math.random() - 0.5) * 7.5;
-      const z = -7.8 - Math.random() * 4;
+      const z = -7.8 - Math.random() * 4; // z from -7.8 to -11.8
       const terrainY = getTerrainHeight(x, z);
       const scale = 0.03 + Math.random() * 0.05;
-      // Place gravel on top of road surface (road is at terrainY + 0.12)
-      gravel.push({ position: [x, -4 + terrainY + 0.12 + scale, z], scale });
+      gravel.push({ 
+        position: [x, -4 + terrainY + 0.12 + scale, z], 
+        scale,
+        rotation: [Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI],
+        color: Math.random() > 0.5 ? '#8b7355' : '#a09080'
+      });
     }
     
-    // Road gravel - follow curve (z=-8 to z=-50)
+    // Road gravel - follow curve (z=-8 to z=-50) - must be negative z only
     for (let i = 0; i < 300; i++) {
-      const z = -8 - Math.random() * 42;
+      const z = -8 - Math.random() * 42; // z from -8 to -50
       const curveX = getRoadCurveX(z);
       const x = curveX + (Math.random() - 0.5) * 3.5;
       const terrainY = getTerrainHeight(x, z);
       const scale = 0.03 + Math.random() * 0.05;
-      // Place gravel on top of road surface
-      gravel.push({ position: [x, -4 + terrainY + 0.12 + scale, z], scale });
+      gravel.push({ 
+        position: [x, -4 + terrainY + 0.12 + scale, z], 
+        scale,
+        rotation: [Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI],
+        color: Math.random() > 0.5 ? '#8b7355' : '#a09080'
+      });
     }
     
     return gravel;
@@ -420,17 +428,17 @@ export function Ground({ quality = 'high' }: GroundProps) {
         />
       </mesh>
 
-      {/* Gravel texture on road */}
+      {/* Gravel texture on road - only on negative z side */}
       {!isLow && roadGravel.map((stone, i) => (
         <mesh
           key={`gravel-${i}`}
           position={stone.position}
-          rotation={[Math.random(), Math.random(), Math.random()]}
+          rotation={stone.rotation}
           scale={stone.scale}
         >
           <dodecahedronGeometry args={[1, 0]} />
           <meshStandardMaterial 
-            color={Math.random() > 0.5 ? '#8b7355' : '#a09080'} 
+            color={stone.color} 
             roughness={0.9} 
           />
         </mesh>
