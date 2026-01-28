@@ -105,7 +105,28 @@ function GrassCluster({ position, density = 8 }: { position: [number, number, nu
   );
 }
 
-// Check if a point is on the road or parking area
+// Get the X offset for the road curve at a given Z position
+function getRoadCurveX(z: number): number {
+  if (z <= 14) return 0; // Parking area is straight
+  // Gentle S-curve using sine waves
+  const t = (z - 14) / 36; // Normalize to 0-1 for the road portion
+  return Math.sin(t * Math.PI * 1.5) * 2.5 + Math.sin(t * Math.PI * 3) * 0.8;
+}
+
+// Get terrain height at a given position
+function getTerrainHeight(x: number, z: number): number {
+  const noise1 = Math.sin(x * 0.05) * Math.cos(z * 0.05) * 0.5;
+  const noise2 = Math.sin(x * 0.1 + 1) * Math.cos(z * 0.08) * 0.3;
+  const noise3 = Math.sin(x * 0.2) * Math.sin(z * 0.15) * 0.15;
+  
+  // Flatten near the building
+  const distFromCenter = Math.sqrt(x * x + z * z);
+  const flattenFactor = Math.min(1, distFromCenter / 15);
+  
+  return (noise1 + noise2 + noise3) * flattenFactor;
+}
+
+// Check if a point is on the road or parking area (with curve)
 function isOnRoad(x: number, z: number): boolean {
   // Parking area in front of door (centered at x=0, z=10 to z=14)
   const parkingWidth = 8;
@@ -116,10 +137,13 @@ function isOnRoad(x: number, z: number): boolean {
     return true;
   }
   
-  // Road from parking to edge of scene (z=14 to z=50)
-  const roadWidth = 4;
-  if (Math.abs(x) <= roadWidth / 2 && z > parkingEnd && z <= 50) {
-    return true;
+  // Curved road from parking to edge of scene (z=14 to z=50)
+  if (z > parkingEnd && z <= 50) {
+    const roadCenterX = getRoadCurveX(z);
+    const roadWidth = 4;
+    if (Math.abs(x - roadCenterX) <= roadWidth / 2 + 0.5) {
+      return true;
+    }
   }
   
   return false;
@@ -156,9 +180,10 @@ export function Ground({ quality = 'high' }: GroundProps) {
         if (isOnRoad(x, z)) continue;
         
         const scale = 0.3 + Math.random() * 0.8;
+        const terrainY = getTerrainHeight(x, z);
         
         rockData.push({
-          position: [x, -3.7 + scale * 0.3, z],
+          position: [x, -4 + terrainY + scale * 0.3, z],
           scale,
           rotation: Math.random() * Math.PI * 2,
         });
@@ -186,9 +211,10 @@ export function Ground({ quality = 'high' }: GroundProps) {
         if (Math.random() > 0.4) {
           const offsetX = (Math.random() - 0.5) * 1.5;
           const offsetZ = (Math.random() - 0.5) * 1.5;
+          const terrainY = getTerrainHeight(x + offsetX, z + offsetZ);
           
           clusters.push({
-            position: [x + offsetX, -3.95, z + offsetZ],
+            position: [x + offsetX, -4 + terrainY + 0.05, z + offsetZ],
             density: 5 + Math.floor(Math.random() * 6),
           });
         }
@@ -207,26 +233,70 @@ export function Ground({ quality = 'high' }: GroundProps) {
     for (let i = 0; i < positions.count; i++) {
       const x = positions.getX(i);
       const z = positions.getY(i); // Y in plane geometry before rotation
-
-      // Create gentle hills and valleys
-      const noise1 = Math.sin(x * 0.05) * Math.cos(z * 0.05) * 0.5;
-      const noise2 = Math.sin(x * 0.1 + 1) * Math.cos(z * 0.08) * 0.3;
-      const noise3 = Math.sin(x * 0.2) * Math.sin(z * 0.15) * 0.15;
       
-      // Flatten near the building
-      const distFromCenter = Math.sqrt(x * x + z * z);
-      const flattenFactor = Math.min(1, distFromCenter / 15);
-      
-      // Flatten road area
-      const roadFlatten = isOnRoad(x, z) ? 0 : 1;
-      
-      const height = (noise1 + noise2 + noise3) * flattenFactor * roadFlatten;
+      const height = getTerrainHeight(x, z);
       positions.setZ(i, height);
     }
 
     geo.computeVertexNormals();
     return geo;
   }, [isLow]);
+
+  // Create curved road geometry that follows terrain
+  const roadGeometry = useMemo(() => {
+    const segmentsZ = 50;
+    const segmentsX = 4;
+    const roadWidth = 4;
+    const roadLength = 36;
+    
+    const geo = new THREE.PlaneGeometry(roadWidth, roadLength, segmentsX, segmentsZ);
+    const positions = geo.attributes.position;
+    
+    for (let i = 0; i < positions.count; i++) {
+      const localX = positions.getX(i); // -2 to 2
+      const localZ = positions.getY(i); // -18 to 18
+      
+      // Map to world coordinates
+      const worldZ = 32 + localZ; // 14 to 50
+      const curveX = getRoadCurveX(worldZ);
+      const worldX = curveX + localX;
+      
+      // Get terrain height and add offset
+      const terrainY = getTerrainHeight(worldX, worldZ);
+      
+      positions.setX(i, worldX);
+      positions.setY(i, worldZ);
+      positions.setZ(i, terrainY + 0.03);
+    }
+    
+    geo.computeVertexNormals();
+    return geo;
+  }, []);
+
+  // Create parking area geometry
+  const parkingGeometry = useMemo(() => {
+    const segmentsX = 8;
+    const segmentsZ = 4;
+    const geo = new THREE.PlaneGeometry(8, 4, segmentsX, segmentsZ);
+    const positions = geo.attributes.position;
+    
+    for (let i = 0; i < positions.count; i++) {
+      const localX = positions.getX(i);
+      const localZ = positions.getY(i);
+      
+      const worldX = localX;
+      const worldZ = 12 + localZ;
+      
+      const terrainY = getTerrainHeight(worldX, worldZ);
+      
+      positions.setX(i, worldX);
+      positions.setY(i, worldZ);
+      positions.setZ(i, terrainY + 0.03);
+    }
+    
+    geo.computeVertexNormals();
+    return geo;
+  }, []);
 
   const stones = useMemo(() => {
     if (isLow) return [] as Array<{ position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] }>;
@@ -241,16 +311,17 @@ export function Ground({ quality = 'high' }: GroundProps) {
       if (isOnRoad(x, z)) return null;
       
       const baseScale = 0.08 + Math.random() * 0.15;
+      const terrainY = getTerrainHeight(x, z);
 
       return {
-        position: [x, -3.95 + baseScale, z] as [number, number, number],
+        position: [x, -4 + terrainY + baseScale, z] as [number, number, number],
         rotation: [Math.random(), Math.random(), Math.random()] as [number, number, number],
         scale: [baseScale * 1.5, baseScale, baseScale * 1.2] as [number, number, number],
       };
     }).filter(Boolean) as Array<{ position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] }>;
   }, [isLow]);
 
-  // Generate gravel stones for road texture
+  // Generate gravel stones for road texture - follow the curve and terrain
   const roadGravel = useMemo(() => {
     if (isLow) return [];
     
@@ -260,16 +331,19 @@ export function Ground({ quality = 'high' }: GroundProps) {
     for (let i = 0; i < 200; i++) {
       const x = (Math.random() - 0.5) * 7.5;
       const z = 10 + Math.random() * 4;
+      const terrainY = getTerrainHeight(x, z);
       const scale = 0.03 + Math.random() * 0.05;
-      gravel.push({ position: [x, -3.97, z], scale });
+      gravel.push({ position: [x, -4 + terrainY + 0.05, z], scale });
     }
     
-    // Road gravel
+    // Road gravel - follow curve
     for (let i = 0; i < 300; i++) {
-      const x = (Math.random() - 0.5) * 3.5;
       const z = 14 + Math.random() * 36;
+      const curveX = getRoadCurveX(z);
+      const x = curveX + (Math.random() - 0.5) * 3.5;
+      const terrainY = getTerrainHeight(x, z);
       const scale = 0.03 + Math.random() * 0.05;
-      gravel.push({ position: [x, -3.97, z], scale });
+      gravel.push({ position: [x, -4 + terrainY + 0.05, z], scale });
     }
     
     return gravel;
@@ -291,13 +365,13 @@ export function Ground({ quality = 'high' }: GroundProps) {
         />
       </mesh>
 
-      {/* Grass detail layer - slightly above terrain */}
+      {/* Grass detail layer - slightly above terrain, excludes road area */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -3.98, 0]}
+        position={[0, -3.99, 0]}
         receiveShadow
       >
-        <circleGeometry args={[45, 64]} />
+        <ringGeometry args={[0, 45, 64]} />
         <meshStandardMaterial
           color="#4a6b3f"
           roughness={0.9}
@@ -305,13 +379,13 @@ export function Ground({ quality = 'high' }: GroundProps) {
         />
       </mesh>
 
-      {/* Gravel road from edge to parking */}
+      {/* Curved gravel road from edge to parking - follows terrain */}
       <mesh
+        geometry={roadGeometry}
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -3.96, 32]}
+        position={[0, -4, 0]}
         receiveShadow
       >
-        <planeGeometry args={[4, 36]} />
         <meshStandardMaterial
           color="#9a8b7a"
           roughness={1}
@@ -319,79 +393,15 @@ export function Ground({ quality = 'high' }: GroundProps) {
         />
       </mesh>
 
-      {/* Parking area in front of door */}
+      {/* Parking area in front of door - follows terrain */}
       <mesh
+        geometry={parkingGeometry}
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -3.96, 12]}
+        position={[0, -4, 0]}
         receiveShadow
       >
-        <planeGeometry args={[8, 4]} />
         <meshStandardMaterial
           color="#9a8b7a"
-          roughness={1}
-          metalness={0}
-        />
-      </mesh>
-
-      {/* Road edge details - darker border */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[-2.2, -3.965, 32]}
-        receiveShadow
-      >
-        <planeGeometry args={[0.4, 36]} />
-        <meshStandardMaterial
-          color="#6b5d4d"
-          roughness={1}
-          metalness={0}
-        />
-      </mesh>
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[2.2, -3.965, 32]}
-        receiveShadow
-      >
-        <planeGeometry args={[0.4, 36]} />
-        <meshStandardMaterial
-          color="#6b5d4d"
-          roughness={1}
-          metalness={0}
-        />
-      </mesh>
-
-      {/* Parking area border */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[-4.2, -3.965, 12]}
-        receiveShadow
-      >
-        <planeGeometry args={[0.4, 4]} />
-        <meshStandardMaterial
-          color="#6b5d4d"
-          roughness={1}
-          metalness={0}
-        />
-      </mesh>
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[4.2, -3.965, 12]}
-        receiveShadow
-      >
-        <planeGeometry args={[0.4, 4]} />
-        <meshStandardMaterial
-          color="#6b5d4d"
-          roughness={1}
-          metalness={0}
-        />
-      </mesh>
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -3.965, 9.8]}
-        receiveShadow
-      >
-        <planeGeometry args={[8.8, 0.4]} />
-        <meshStandardMaterial
-          color="#6b5d4d"
           roughness={1}
           metalness={0}
         />
