@@ -6,6 +6,7 @@ import { Sun } from './Sun';
 import { Ground } from './Ground';
 import { Compass } from './Compass';
 import { SolarConfig, SunPosition } from '@/types/solar';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SceneProps {
   config: SolarConfig;
@@ -14,13 +15,15 @@ interface SceneProps {
 
 export function Scene({ config, sunPosition }: SceneProps) {
   const isDay = sunPosition.altitude > 0;
+  const isMobile = useIsMobile();
 
   return (
     <Canvas
-      shadows
+      key={isMobile ? 'mobile' : 'desktop'}
+      shadows={!isMobile}
       camera={{ position: [15, 12, 15], fov: 50 }}
-      gl={{ antialias: true, powerPreference: 'high-performance' }}
-      dpr={[1, 2]}
+      gl={{ antialias: !isMobile, powerPreference: isMobile ? 'low-power' : 'high-performance' }}
+      dpr={isMobile ? 1 : [1, 2]}
       style={{ width: '100%', height: '100%' }}
       resize={{ scroll: false, debounce: { scroll: 50, resize: 0 } }}
     >
@@ -38,7 +41,7 @@ export function Scene({ config, sunPosition }: SceneProps) {
       {!isDay && <color attach="background" args={['#0a0a1a']} />}
 
       {/* Sun and lighting */}
-      <Sun position={sunPosition} />
+      <Sun position={sunPosition} quality={isMobile ? 'low' : 'high'} />
 
       {/* Roof */}
       <Roof material={config.roofMaterial} />
@@ -50,7 +53,7 @@ export function Scene({ config, sunPosition }: SceneProps) {
       />
 
       {/* Ground with terrain, grass, and rocks */}
-      <Ground />
+      <Ground quality={isMobile ? 'low' : 'high'} />
 
       {/* Compass indicator */}
       <Compass />
@@ -81,7 +84,7 @@ export function Scene({ config, sunPosition }: SceneProps) {
       />
 
       {/* Environment for reflections */}
-      <Environment preset="city" />
+      {!isMobile && <Environment preset="city" />}
     </Canvas>
   );
 }

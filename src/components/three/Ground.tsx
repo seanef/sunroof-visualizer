@@ -2,6 +2,10 @@ import { useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 
+interface GroundProps {
+  quality?: 'high' | 'low';
+}
+
 interface RockProps {
   position: [number, number, number];
   scale: number;
@@ -9,6 +13,7 @@ interface RockProps {
 }
 
 function Rock({ position, scale, rotation }: RockProps) {
+  const zRotation = useMemo(() => Math.random() * 0.3, []);
   const geometry = useMemo(() => {
     const geo = new THREE.DodecahedronGeometry(1, 1);
     const positions = geo.attributes.position;
@@ -31,7 +36,7 @@ function Rock({ position, scale, rotation }: RockProps) {
     <mesh
       geometry={geometry}
       position={position}
-      rotation={[0, rotation, Math.random() * 0.3]}
+      rotation={[0, rotation, zRotation]}
       scale={[scale * 1.2, scale * 0.6, scale]}
       castShadow
       receiveShadow
@@ -100,18 +105,27 @@ function GrassCluster({ position, density = 8 }: { position: [number, number, nu
   );
 }
 
-export function Ground() {
+export function Ground({ quality = 'high' }: GroundProps) {
+  const isLow = quality === 'low';
+
   // Generate rock positions
   const rocks = useMemo(() => {
     const rockData: RockProps[] = [];
-    const rockClusters = [
-      { center: [-15, -12], count: 5 },
-      { center: [18, -8], count: 4 },
-      { center: [-8, 15], count: 6 },
-      { center: [12, 14], count: 4 },
-      { center: [-20, 5], count: 3 },
-      { center: [22, 2], count: 5 },
-    ];
+    const rockClusters = isLow
+      ? [
+          { center: [-14, -10], count: 2 },
+          { center: [16, -8], count: 2 },
+          { center: [-8, 14], count: 2 },
+          { center: [12, 12], count: 2 },
+        ]
+      : [
+          { center: [-15, -12], count: 5 },
+          { center: [18, -8], count: 4 },
+          { center: [-8, 15], count: 6 },
+          { center: [12, 14], count: 4 },
+          { center: [-20, 5], count: 3 },
+          { center: [22, 2], count: 5 },
+        ];
 
     rockClusters.forEach(cluster => {
       for (let i = 0; i < cluster.count; i++) {
@@ -128,10 +142,11 @@ export function Ground() {
     });
 
     return rockData;
-  }, []);
+  }, [isLow]);
 
   // Generate grass cluster positions
   const grassClusters = useMemo(() => {
+    if (isLow) return [];
     const clusters: { position: [number, number, number]; density: number }[] = [];
     
     for (let x = -25; x <= 25; x += 2) {
@@ -154,11 +169,12 @@ export function Ground() {
     }
 
     return clusters;
-  }, []);
+  }, [isLow]);
 
   // Create terrain geometry with gentle undulation
   const terrainGeometry = useMemo(() => {
-    const geo = new THREE.PlaneGeometry(100, 100, 64, 64);
+    const segments = isLow ? 24 : 64;
+    const geo = new THREE.PlaneGeometry(100, 100, segments, segments);
     const positions = geo.attributes.position;
 
     for (let i = 0; i < positions.count; i++) {
@@ -180,7 +196,25 @@ export function Ground() {
 
     geo.computeVertexNormals();
     return geo;
-  }, []);
+  }, [isLow]);
+
+  const stones = useMemo(() => {
+    if (isLow) return [] as Array<{ position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] }>;
+
+    return Array.from({ length: 30 }).map(() => {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 12 + Math.random() * 20;
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+      const baseScale = 0.08 + Math.random() * 0.15;
+
+      return {
+        position: [x, -4.95 + baseScale, z] as [number, number, number],
+        rotation: [Math.random(), Math.random(), Math.random()] as [number, number, number],
+        scale: [baseScale * 1.5, baseScale, baseScale * 1.2] as [number, number, number],
+      };
+    });
+  }, [isLow]);
 
   return (
     <group>
@@ -232,41 +266,35 @@ export function Ground() {
       ))}
 
       {/* Large boulders */}
-      <Rock position={[-22, -4, -15]} scale={2.5} rotation={0.5} />
-      <Rock position={[25, -4, 10]} scale={2.2} rotation={1.2} />
-      <Rock position={[15, -4.2, -20]} scale={1.8} rotation={2.1} />
+      {!isLow && (
+        <>
+          <Rock position={[-22, -4, -15]} scale={2.5} rotation={0.5} />
+          <Rock position={[25, -4, 10]} scale={2.2} rotation={1.2} />
+          <Rock position={[15, -4.2, -20]} scale={1.8} rotation={2.1} />
+        </>
+      )}
 
       {/* Grass clusters */}
-      {grassClusters.map((cluster, i) => (
-        <GrassCluster key={`grass-${i}`} {...cluster} />
-      ))}
+      {!isLow &&
+        grassClusters.map((cluster, i) => (
+          <GrassCluster key={`grass-${i}`} {...cluster} />
+        ))}
 
       {/* Small stones scattered around */}
-      {Array.from({ length: 30 }).map((_, i) => {
-        const angle = Math.random() * Math.PI * 2;
-        const radius = 12 + Math.random() * 20;
-        const x = Math.cos(angle) * radius;
-        const z = Math.sin(angle) * radius;
-        const scale = 0.08 + Math.random() * 0.15;
-        
-        return (
+      {!isLow &&
+        stones.map((stone, i) => (
           <mesh
             key={`stone-${i}`}
-            position={[x, -4.95 + scale, z]}
-            rotation={[Math.random(), Math.random(), Math.random()]}
-            scale={[scale * 1.5, scale, scale * 1.2]}
+            position={stone.position}
+            rotation={stone.rotation}
+            scale={stone.scale}
             castShadow
             receiveShadow
           >
             <dodecahedronGeometry args={[1, 0]} />
-            <meshStandardMaterial
-              color="#9ca3af"
-              roughness={0.85}
-              metalness={0.05}
-            />
+            <meshStandardMaterial color="#9ca3af" roughness={0.85} metalness={0.05} />
           </mesh>
-        );
-      })}
+        ))}
     </group>
   );
 }
