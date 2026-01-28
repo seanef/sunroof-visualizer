@@ -98,9 +98,9 @@ export function PVUnitArray({ rows, columns, azimuth }: PVUnitArrayProps) {
   }, [centeredObj, rows, columns, scale]);
 
   // Convert azimuth to radians for rotation (0° = North, 90° = East)
-  // In Three.js, rotation around Y-axis: 0 = +Z direction
-  // We want 0° = North (-Z in our scene), 90° = East (+X)
-  const azimuthRadians = (azimuth * Math.PI) / 180;
+  // The model's front face needs to align with the azimuth direction
+  // Subtract 90° to correct the initial orientation offset
+  const azimuthRadians = ((azimuth - 90) * Math.PI) / 180;
 
   return <group rotation={[0, azimuthRadians, 0]}>{instances}</group>;
 }
