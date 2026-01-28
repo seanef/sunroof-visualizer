@@ -414,6 +414,10 @@ export function Ground({ quality = 'high' }: GroundProps) {
           color="#9a8b7a"
           roughness={1}
           metalness={0}
+          side={THREE.DoubleSide}
+          polygonOffset
+          polygonOffsetFactor={-1}
+          polygonOffsetUnits={-1}
         />
       </mesh>
 
@@ -428,6 +432,10 @@ export function Ground({ quality = 'high' }: GroundProps) {
           color="#9a8b7a"
           roughness={1}
           metalness={0}
+          side={THREE.DoubleSide}
+          polygonOffset
+          polygonOffsetFactor={-1}
+          polygonOffsetUnits={-1}
         />
       </mesh>
 
