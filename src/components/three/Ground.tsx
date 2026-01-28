@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 
@@ -237,26 +237,11 @@ export function Ground({ quality = 'high' }: GroundProps) {
     return clusters;
   }, [isLow]);
 
-  // Create terrain geometry with gentle undulation and vertex colors for natural grass variation
+  // Create terrain geometry with gentle undulation
   const terrainGeometry = useMemo(() => {
     const segments = isLow ? 24 : 64;
     const geo = new THREE.PlaneGeometry(100, 100, segments, segments);
     const positions = geo.attributes.position;
-
-    // Create vertex colors for grass variation
-    const colors = new Float32Array(positions.count * 3);
-    
-    // Seed random patches
-    const patchCenters = [
-      { x: -15, z: -20, radius: 12, hue: 0.08 },  // Yellowish patch
-      { x: 20, z: 15, radius: 10, hue: -0.05 },   // Darker patch
-      { x: -25, z: 10, radius: 8, hue: 0.1 },     // Dry grass patch
-      { x: 10, z: -25, radius: 15, hue: -0.03 },  // Lush dark green
-      { x: 30, z: -10, radius: 9, hue: 0.06 },    // Lighter patch
-      { x: -10, z: 25, radius: 11, hue: -0.04 },  // Deep green
-      { x: 25, z: 25, radius: 7, hue: 0.12 },     // Dried patch
-      { x: -30, z: -15, radius: 10, hue: 0.04 },  // Slight yellow
-    ];
     
     for (let i = 0; i < positions.count; i++) {
       const x = positions.getX(i);
@@ -265,58 +250,105 @@ export function Ground({ quality = 'high' }: GroundProps) {
       
       const height = getTerrainHeight(x, worldZ);
       positions.setZ(i, height);
-      
-      // Large-scale gradient noise for broad color shifts
-      const gradient1 = Math.sin(x * 0.04 + worldZ * 0.03) * 0.5 + 0.5;
-      const gradient2 = Math.cos(x * 0.025 - worldZ * 0.04 + 1.5) * 0.5 + 0.5;
-      
-      // Medium-scale patches
-      const patch1 = Math.sin(x * 0.12) * Math.cos(worldZ * 0.1) * 0.5 + 0.5;
-      const patch2 = Math.cos(x * 0.08 + 2) * Math.sin(worldZ * 0.15 - 1) * 0.5 + 0.5;
-      
-      // Fine detail noise
-      const detail = Math.sin(x * 0.3 + worldZ * 0.25) * Math.cos(x * 0.2 - worldZ * 0.35) * 0.5 + 0.5;
-      
-      // Calculate patch influence
-      let patchInfluence = 0;
-      for (const patch of patchCenters) {
-        const dist = Math.sqrt((x - patch.x) ** 2 + (worldZ - patch.z) ** 2);
-        if (dist < patch.radius) {
-          const falloff = 1 - (dist / patch.radius);
-          const smoothFalloff = falloff * falloff * (3 - 2 * falloff); // Smoothstep
-          patchInfluence += patch.hue * smoothFalloff;
-        }
-      }
-      
-      // Combine all variations
-      const combined = gradient1 * 0.25 + gradient2 * 0.2 + patch1 * 0.2 + patch2 * 0.15 + detail * 0.2;
-      
-      // Base grass colors - vibrant green
-      const baseR = 0.24;
-      const baseG = 0.42;
-      const baseB = 0.20;
-      
-      // Apply variation - shift towards yellow-green or blue-green
-      const variation = (combined - 0.5) * 0.4 + patchInfluence;
-      
-      // Red shifts more for yellow/dry grass effect
-      const r = Math.max(0.12, Math.min(0.45, baseR + variation * 0.8 + patchInfluence * 0.3));
-      // Green varies for light/dark patches  
-      const g = Math.max(0.25, Math.min(0.55, baseG + variation * 0.5));
-      // Blue inversely for warmth variation
-      const b = Math.max(0.08, Math.min(0.32, baseB - variation * 0.3));
-      
-      colors[i * 3] = r;
-      colors[i * 3 + 1] = g;
-      colors[i * 3 + 2] = b;
     }
 
-    const colorAttr = new THREE.BufferAttribute(colors, 3);
-    colorAttr.needsUpdate = true;
-    geo.setAttribute('color', colorAttr);
+    positions.needsUpdate = true;
     geo.computeVertexNormals();
     return geo;
   }, [isLow]);
+
+  // Procedural grass color map (patches + broad gradients) to ensure visible variation
+  const grassColorMap = useMemo(() => {
+    // Always generate a map so the terrain never falls back to white on low quality.
+    // Use a lower resolution for mobile/low quality to keep it cheap.
+    const size = isLow ? 96 : 256;
+    const data = new Uint8Array(size * size * 4);
+
+    // World extents for the plane (100x100 centered at origin)
+    const worldMin = -50;
+    const worldSize = 100;
+
+    const patchCenters = [
+      { x: -15, z: -20, radius: 12, hue: 0.10 },
+      { x: 20, z: 15, radius: 10, hue: -0.06 },
+      { x: -25, z: 10, radius: 8, hue: 0.12 },
+      { x: 10, z: -25, radius: 15, hue: -0.04 },
+      { x: 30, z: -10, radius: 9, hue: 0.08 },
+      { x: -10, z: 25, radius: 11, hue: -0.05 },
+      { x: 25, z: 25, radius: 7, hue: 0.14 },
+      { x: -30, z: -15, radius: 10, hue: 0.06 },
+    ];
+
+    for (let py = 0; py < size; py++) {
+      for (let px = 0; px < size; px++) {
+        const u = px / (size - 1);
+        const v = py / (size - 1);
+
+        // Map UVs to world X/Z
+        const x = worldMin + u * worldSize;
+        const z = worldMin + v * worldSize;
+
+        // Broad gradients
+        const gradient1 = Math.sin(x * 0.04 + z * 0.03) * 0.5 + 0.5;
+        const gradient2 = Math.cos(x * 0.025 - z * 0.04 + 1.5) * 0.5 + 0.5;
+
+        // Medium patches
+        const patch1 = Math.sin(x * 0.12) * Math.cos(z * 0.1) * 0.5 + 0.5;
+        const patch2 = Math.cos(x * 0.08 + 2) * Math.sin(z * 0.15 - 1) * 0.5 + 0.5;
+
+        // Fine detail
+        const detail = Math.sin(x * 0.32 + z * 0.28) * Math.cos(x * 0.22 - z * 0.36) * 0.5 + 0.5;
+
+        // Radial patch influence (smooth falloff)
+        let patchInfluence = 0;
+        for (const patch of patchCenters) {
+          const dx = x - patch.x;
+          const dz = z - patch.z;
+          const dist = Math.sqrt(dx * dx + dz * dz);
+          if (dist < patch.radius) {
+            const t = 1 - dist / patch.radius;
+            const smooth = t * t * (3 - 2 * t);
+            patchInfluence += patch.hue * smooth;
+          }
+        }
+
+        const combined = gradient1 * 0.22 + gradient2 * 0.18 + patch1 * 0.20 + patch2 * 0.16 + detail * 0.24;
+        const variation = (combined - 0.5) * 0.55 + patchInfluence;
+
+        // Base vibrant grass in linear-ish space, converted to sRGB via texture.colorSpace
+        const baseR = 0.20;
+        const baseG = 0.46;
+        const baseB = 0.18;
+
+        const r = Math.max(0.10, Math.min(0.45, baseR + variation * 0.70 + patchInfluence * 0.25));
+        const g = Math.max(0.20, Math.min(0.65, baseG + variation * 0.55));
+        const b = Math.max(0.06, Math.min(0.35, baseB - variation * 0.25));
+
+        const idx = (py * size + px) * 4;
+        data[idx] = Math.round(r * 255);
+        data[idx + 1] = Math.round(g * 255);
+        data[idx + 2] = Math.round(b * 255);
+        data[idx + 3] = 255;
+      }
+    }
+
+    const tex = new THREE.DataTexture(data, size, size, THREE.RGBAFormat, THREE.UnsignedByteType);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.wrapS = THREE.ClampToEdgeWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.magFilter = THREE.LinearFilter;
+    tex.minFilter = THREE.LinearMipMapLinearFilter;
+    tex.generateMipmaps = true;
+    tex.needsUpdate = true;
+
+    return tex;
+  }, [isLow]);
+
+  useEffect(() => {
+    return () => {
+      grassColorMap?.dispose();
+    };
+  }, [grassColorMap]);
 
   // Create curved road geometry that follows terrain (positive Z, door side)
   // After mesh rotation (-PI/2 on X): localY → -worldZ, localZ → worldY
@@ -455,7 +487,9 @@ export function Ground({ quality = 'high' }: GroundProps) {
         receiveShadow
       >
         <meshStandardMaterial
-          vertexColors={true}
+          map={grassColorMap}
+          // Base tint so even if the map is subtle you still get a grassy green.
+          color="#3d5c35"
           roughness={0.95}
           metalness={0}
         />
