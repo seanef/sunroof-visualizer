@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { useLoader } from '@react-three/fiber';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
-import { Group } from 'three';
+import { Box3, Vector3 } from 'three';
 
 interface PVUnitArrayProps {
   rows: number;
@@ -23,9 +23,28 @@ export function PVUnitArray({ rows, columns }: PVUnitArrayProps) {
     loader.setMaterials(materials);
   });
 
-  // Clone the original object for instancing
-  const clonedObjects = useMemo(() => {
-    const clones: Group[] = [];
+  // Center the original geometry once
+  const centeredObj = useMemo(() => {
+    const clone = obj.clone(true);
+    
+    // Calculate bounding box to find center
+    const box = new Box3().setFromObject(clone);
+    const center = new Vector3();
+    box.getCenter(center);
+    
+    // Offset all children to center the model at origin
+    clone.traverse((child) => {
+      if ('geometry' in child && child.geometry) {
+        (child.geometry as any).translate(-center.x, -center.y, -center.z);
+      }
+    });
+    
+    return clone;
+  }, [obj]);
+
+  // Create tiled instances
+  const instances = useMemo(() => {
+    const result: JSX.Element[] = [];
     
     // Calculate total array dimensions
     const totalWidth = columns * UNIT_WIDTH;
@@ -37,13 +56,13 @@ export function PVUnitArray({ rows, columns }: PVUnitArrayProps) {
     
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < columns; col++) {
-        const clone = obj.clone(true);
+        const clone = centeredObj.clone(true);
         
         // Position each unit
         const x = startX + col * UNIT_WIDTH;
         const z = startZ + row * UNIT_DEPTH;
         
-        clone.position.set(x, 0.01, z); // Slightly above roof
+        clone.position.set(x, 0.05, z);
         clone.scale.set(SCALE, SCALE, SCALE);
         
         // Enable shadows
@@ -54,18 +73,14 @@ export function PVUnitArray({ rows, columns }: PVUnitArrayProps) {
           }
         });
         
-        clones.push(clone);
+        result.push(
+          <primitive key={`unit-${row}-${col}`} object={clone} />
+        );
       }
     }
     
-    return clones;
-  }, [obj, rows, columns]);
+    return result;
+  }, [centeredObj, rows, columns]);
 
-  return (
-    <group>
-      {clonedObjects.map((clone, index) => (
-        <primitive key={index} object={clone} />
-      ))}
-    </group>
-  );
+  return <group>{instances}</group>;
 }

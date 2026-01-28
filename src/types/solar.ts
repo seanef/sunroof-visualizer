@@ -6,8 +6,6 @@ export interface SolarConfig {
   time: number; // hours in 24h format (0-24)
   latitude: number;
   longitude: number;
-  panelRows: number;
-  panelSpacing: number;
   unitRows: number;
   unitColumns: number;
 }
@@ -33,8 +31,6 @@ export const DEFAULT_CONFIG: SolarConfig = {
   time: 12,
   latitude: 52.52, // Berlin
   longitude: 13.405,
-  panelRows: 4,
-  panelSpacing: 2.5,
   unitRows: 2,
   unitColumns: 3,
 };

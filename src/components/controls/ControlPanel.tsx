@@ -1,9 +1,8 @@
 import { SolarConfig, SunPosition } from '@/types/solar';
 import { RoofMaterialSelector } from './RoofMaterialSelector';
 import { SunPositionControls } from './SunPositionControls';
-import { PanelControls } from './PanelControls';
 import { UnitControls } from './UnitControls';
-import { Sun, Layers, Grid3X3, Box, Info } from 'lucide-react';
+import { Sun, Layers, Box, Info } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 interface ControlPanelProps {
@@ -84,22 +83,6 @@ export function ControlPanel({ config, sunPosition, onConfigChange }: ControlPan
           unitColumns={config.unitColumns}
           onUnitRowsChange={(unitRows) => onConfigChange({ unitRows })}
           onUnitColumnsChange={(unitColumns) => onConfigChange({ unitColumns })}
-        />
-      </div>
-
-      <Separator className="mb-5" />
-
-      {/* Panel Configuration */}
-      <div className="mb-5">
-        <div className="flex items-center gap-2 mb-3">
-          <Grid3X3 className="w-4 h-4 text-primary" />
-          <span className="text-sm font-medium">Panel Layout</span>
-        </div>
-        <PanelControls
-          rows={config.panelRows}
-          spacing={config.panelSpacing}
-          onRowsChange={(panelRows) => onConfigChange({ panelRows })}
-          onSpacingChange={(panelSpacing) => onConfigChange({ panelSpacing })}
         />
       </div>
 
