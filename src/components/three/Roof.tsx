@@ -193,8 +193,8 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
   return (
     <group>
       {/* Building walls */}
-      {/* Front wall with door and windows */}
-      <group position={[0, -buildingHeight / 2, depth / 2]}>
+      {/* Front wall with door and windows - offset down slightly to avoid z-fighting with roof */}
+      <group position={[0, -buildingHeight / 2 - 0.01, depth / 2]}>
         {/* Solid wall behind openings */}
         <mesh castShadow receiveShadow>
           <boxGeometry args={[width, buildingHeight, wallThickness]} />
@@ -224,7 +224,7 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
       </group>
 
       {/* Back wall */}
-      <group position={[0, -buildingHeight / 2, -depth / 2]}>
+      <group position={[0, -buildingHeight / 2 - 0.01, -depth / 2]}>
         <mesh castShadow receiveShadow>
           <boxGeometry args={[width, buildingHeight, wallThickness]} />
           <meshStandardMaterial color="#e8e0d5" roughness={0.9} />
@@ -236,7 +236,7 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
       </group>
 
       {/* Left wall with windows */}
-      <group position={[-width / 2, -buildingHeight / 2, 0]} rotation={[0, Math.PI / 2, 0]}>
+      <group position={[-width / 2, -buildingHeight / 2 - 0.01, 0]} rotation={[0, Math.PI / 2, 0]}>
         <mesh castShadow receiveShadow>
           <boxGeometry args={[depth, buildingHeight, wallThickness]} />
           <meshStandardMaterial color="#d8d0c5" roughness={0.9} />
@@ -247,8 +247,8 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
         ))}
       </group>
 
-      {/* Right wall with windows */}
-      <group position={[width / 2, -buildingHeight / 2, 0]} rotation={[0, -Math.PI / 2, 0]}>
+      {/* Right wall with windows - offset down slightly to avoid z-fighting with roof */}
+      <group position={[width / 2, -buildingHeight / 2 - 0.01, 0]} rotation={[0, -Math.PI / 2, 0]}>
         <mesh castShadow receiveShadow>
           <boxGeometry args={[depth, buildingHeight, wallThickness]} />
           <meshStandardMaterial color="#d8d0c5" roughness={0.9} />
