@@ -315,14 +315,14 @@ export function Ground({ quality = 'high' }: GroundProps) {
         const combined = gradient1 * 0.22 + gradient2 * 0.18 + patch1 * 0.20 + patch2 * 0.16 + detail * 0.24;
         const variation = (combined - 0.5) * 0.55 + patchInfluence;
 
-        // Base vibrant grass in linear-ish space, converted to sRGB via texture.colorSpace
-        const baseR = 0.20;
-        const baseG = 0.46;
-        const baseB = 0.18;
+        // Base lighter grass in linear-ish space, converted to sRGB via texture.colorSpace
+        const baseR = 0.32;
+        const baseG = 0.58;
+        const baseB = 0.28;
 
-        const r = Math.max(0.10, Math.min(0.45, baseR + variation * 0.70 + patchInfluence * 0.25));
-        const g = Math.max(0.20, Math.min(0.65, baseG + variation * 0.55));
-        const b = Math.max(0.06, Math.min(0.35, baseB - variation * 0.25));
+        const r = Math.max(0.22, Math.min(0.55, baseR + variation * 0.60 + patchInfluence * 0.20));
+        const g = Math.max(0.40, Math.min(0.75, baseG + variation * 0.45));
+        const b = Math.max(0.18, Math.min(0.45, baseB - variation * 0.20));
 
         const idx = (py * size + px) * 4;
         data[idx] = Math.round(r * 255);
