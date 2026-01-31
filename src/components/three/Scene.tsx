@@ -34,8 +34,10 @@ export function Scene({ config, sunPosition }: SceneProps) {
         <Sky
           distance={450000}
           sunPosition={[sunPosition.x, sunPosition.y, sunPosition.z]}
-          inclination={0.5}
-          azimuth={0.25}
+          rayleigh={0.2}
+          turbidity={1}
+          mieCoefficient={0.001}
+          mieDirectionalG={0.99}
         />
       )}
 
