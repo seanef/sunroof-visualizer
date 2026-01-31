@@ -25,8 +25,8 @@ export function PVUnitArray({ rows, columns, azimuth }: PVUnitArrayProps) {
     loader.setMaterials(materials);
   });
 
-  // Center the original geometry and calculate proper scale
-  const { centeredObj, scale } = useMemo(() => {
+  // Center horizontally and lift so bottom sits on ground (Y=0), calculate proper scale
+  const { centeredObj, scale, yOffset } = useMemo(() => {
     const clone = obj.clone(true);
     
     // Calculate bounding box
@@ -38,20 +38,30 @@ export function PVUnitArray({ rows, columns, azimuth }: PVUnitArrayProps) {
     
     // Log actual model dimensions for debugging
     console.log('OBJ model size:', size.x, size.y, size.z);
+    console.log('OBJ model bounds min:', box.min.x, box.min.y, box.min.z);
+    console.log('OBJ model bounds max:', box.max.x, box.max.y, box.max.z);
     
     // Calculate scale based on actual unit dimensions (not spacing)
     const modelFootprint = Math.max(size.x, size.y); // Original horizontal dimensions
     const targetFootprint = Math.max(UNIT_ACTUAL_WIDTH, UNIT_ACTUAL_DEPTH);
     const calculatedScale = targetFootprint / modelFootprint;
     
-    // Offset all children to center the model at origin
+    // Center horizontally (X and Z after rotation), but keep Y at bottom
+    // We'll translate X and Y (which becomes Z after -90° X rotation) to center
+    // And translate Z (which becomes Y after rotation) so bottom is at 0
     clone.traverse((child) => {
       if ('geometry' in child && child.geometry) {
-        (child.geometry as any).translate(-center.x, -center.y, -center.z);
+        // Center on X and Y (horizontal centering)
+        // For Z: shift so that min.z becomes 0 (bottom of model at origin)
+        (child.geometry as any).translate(-center.x, -center.y, -box.min.z);
       }
     });
     
-    return { centeredObj: clone, scale: calculatedScale };
+    // After rotation -90° around X: original Z becomes Y
+    // The scaled height offset to place bottom on roof surface
+    const scaledBottomOffset = 0; // Bottom is now at Z=0 before rotation, becomes Y=0 after
+    
+    return { centeredObj: clone, scale: calculatedScale, yOffset: scaledBottomOffset };
   }, [obj]);
 
   // Create tiled instances
@@ -74,7 +84,7 @@ export function PVUnitArray({ rows, columns, azimuth }: PVUnitArrayProps) {
         const x = startX + col * UNIT_SPACING_X;
         const z = startZ + row * UNIT_SPACING_Z;
         
-        clone.position.set(x, 0.05, z);
+        clone.position.set(x, 0, z);
         clone.scale.set(scale, scale, scale);
         
         // Rotate 90 degrees around X-axis so panels lay flat with lamellas vertical
