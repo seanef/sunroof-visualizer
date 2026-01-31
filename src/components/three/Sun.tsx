@@ -57,12 +57,12 @@ export function Sun({ position, quality = 'high' }: SunProps) {
         shadow-mapSize-width={quality === 'low' ? 1024 : 4096}
         shadow-mapSize-height={quality === 'low' ? 1024 : 4096}
         shadow-camera-near={0.5}
-        shadow-camera-far={80}
-        shadow-camera-left={-25}
-        shadow-camera-right={25}
-        shadow-camera-top={25}
-        shadow-camera-bottom={-25}
-        shadow-bias={-0.001}
+        shadow-camera-far={100}
+        shadow-camera-left={-35}
+        shadow-camera-right={35}
+        shadow-camera-top={35}
+        shadow-camera-bottom={-35}
+        shadow-bias={-0.0005}
       />
 
       {/* Night fill light ("moon") so the scene isn't pitch black */}
