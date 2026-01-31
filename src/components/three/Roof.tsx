@@ -293,7 +293,7 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
       </group>
 
       {/* Main roof surface - extended slightly to go under parapets */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} castShadow receiveShadow>
         <planeGeometry args={[width + 0.4, depth + 0.4]} />
         <meshStandardMaterial
           color={ROOF_COLORS[material]}
