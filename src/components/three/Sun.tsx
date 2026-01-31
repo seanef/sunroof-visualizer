@@ -83,13 +83,13 @@ export function Sun({ position, quality = 'high' }: SunProps) {
       )}
 
       {/* Ambient light for fill - balanced for shadow visibility */}
-      <ambientLight intensity={isNight ? 0.08 : 0.035} color={'hsl(210 35% 85%)'} />
+      <ambientLight intensity={isNight ? 0.12 : 0.08} color={'hsl(210 35% 85%)'} />
 
-      {/* Hemisphere light for sky/ground color - reduced for higher contrast shadows */}
+      {/* Hemisphere light for sky/ground color */}
       <hemisphereLight
         color={'hsl(200 60% 75%)'}
         groundColor={'hsl(120 20% 25%)'}
-        intensity={isNight ? 0.05 : 0.025}
+        intensity={isNight ? 0.08 : 0.05}
       />
     </>
   );
