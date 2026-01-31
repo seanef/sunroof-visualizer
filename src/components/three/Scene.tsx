@@ -24,7 +24,8 @@ export function Scene({ config, sunPosition }: SceneProps) {
       key={isMobile ? 'mobile' : 'desktop'}
       // Shadows must be enabled at the renderer level; otherwise no objects will cast onto receivers
       // (ground/roof), even if castShadow/receiveShadow are set on meshes.
-      shadows
+      // Using "soft" enables PCFSoftShadowMap for smoother shadow edges
+      shadows={isMobile ? true : 'soft'}
       camera={{ position: [15, 12, 15], fov: 50 }}
       gl={{ antialias: !isMobile, powerPreference: isMobile ? 'low-power' : 'high-performance' }}
       dpr={isMobile ? 1 : [1, 2]}
