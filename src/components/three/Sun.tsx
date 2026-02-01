@@ -8,11 +8,32 @@ interface SunProps {
   lighting: LightingConfig;
 }
 
+// Calculate air mass using Kasten-Young formula (more accurate near horizon)
+function getAirMass(altitudeRad: number): number {
+  const altDeg = (altitudeRad * 180) / Math.PI;
+  if (altDeg <= 0) return Infinity;
+  
+  // Kasten-Young formula: AM = 1 / (sin(h) + 0.50572 * (h + 6.07995)^-1.6364)
+  const sinAlt = Math.sin(altitudeRad);
+  const term = 0.50572 * Math.pow(altDeg + 6.07995, -1.6364);
+  return 1 / (sinAlt + term);
+}
+
+// Calculate atmospheric attenuation using Meinel approximation of Beer-Lambert
+// Returns fraction of light transmitted (0-1)
+function getAtmosphericTransmittance(airMass: number): number {
+  if (!isFinite(airMass) || airMass <= 0) return 0;
+  // Meinel model: I/I₀ ≈ 0.7^(AM^0.678)
+  return Math.pow(0.7, Math.pow(airMass, 0.678));
+}
+
 export function Sun({ position, quality = 'high', lighting }: SunProps) {
   const lightRef = useRef<DirectionalLight>(null);
 
-  // Calculate intensity based on altitude (sun height) - using configurable sun intensity
-  const intensity = Math.max(0, Math.sin(position.altitude)) * lighting.sunIntensity;
+  // Calculate intensity using air mass attenuation (physically accurate)
+  const airMass = getAirMass(position.altitude);
+  const transmittance = getAtmosphericTransmittance(airMass);
+  const intensity = transmittance * lighting.sunIntensity;
   const isNight = position.altitude < 0;
 
   // Sun color based on altitude (more orange at sunset/sunrise)
