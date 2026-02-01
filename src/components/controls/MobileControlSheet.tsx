@@ -1,8 +1,15 @@
-import { SolarConfig, SunPosition } from '@/types/solar';
+import { SolarConfig, SunPosition, LightingConfig } from '@/types/solar';
 import { RoofMaterialSelector } from './RoofMaterialSelector';
 import { SunPositionControls } from './SunPositionControls';
 import { UnitControls } from './UnitControls';
-import { Sun, Layers, Box, Info, Settings } from 'lucide-react';
+import { LightingControls } from './LightingControls';
+import { Sun, Layers, Box, Info, Settings, Lightbulb } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Separator } from '@/components/ui/separator';
 import {
   Sheet,
@@ -106,6 +113,24 @@ export function MobileControlSheet({ config, sunPosition, onConfigChange }: Mobi
         </div>
 
         <Separator className="mb-5" />
+
+        {/* Advanced Lighting Controls */}
+        <Accordion type="single" collapsible className="mb-5">
+          <AccordionItem value="lighting" className="border-none">
+            <AccordionTrigger className="py-2 hover:no-underline">
+              <div className="flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">Advanced Lighting</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-3">
+              <LightingControls
+                lighting={config.lighting}
+                onLightingChange={(lighting) => onConfigChange({ lighting: { ...config.lighting, ...lighting } })}
+              />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         {/* Info */}
         <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">

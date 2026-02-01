@@ -1,17 +1,18 @@
 import { useRef, useEffect } from 'react';
 import { DirectionalLight, Vector3 } from 'three';
-import { SunPosition } from '@/types/solar';
+import { SunPosition, LightingConfig } from '@/types/solar';
 
 interface SunProps {
   position: SunPosition;
   quality?: 'high' | 'low';
+  lighting: LightingConfig;
 }
 
-export function Sun({ position, quality = 'high' }: SunProps) {
+export function Sun({ position, quality = 'high', lighting }: SunProps) {
   const lightRef = useRef<DirectionalLight>(null);
 
-  // Calculate intensity based on altitude (sun height) - increased for stronger shadows
-  const intensity = Math.max(0, Math.sin(position.altitude)) * 6.0;
+  // Calculate intensity based on altitude (sun height) - using configurable sun intensity
+  const intensity = Math.max(0, Math.sin(position.altitude)) * lighting.sunIntensity;
   const isNight = position.altitude < 0;
 
   // Sun color based on altitude (more orange at sunset/sunrise)
@@ -83,13 +84,13 @@ export function Sun({ position, quality = 'high' }: SunProps) {
       )}
 
       {/* Ambient light for fill - balanced for shadow visibility */}
-      <ambientLight intensity={isNight ? 0.12 : 0.08} color={'hsl(210 35% 85%)'} />
+      <ambientLight intensity={isNight ? 0.12 : lighting.ambientIntensity} color={'hsl(210 35% 85%)'} />
 
       {/* Hemisphere light for sky/ground color */}
       <hemisphereLight
         color={'hsl(200 60% 75%)'}
         groundColor={'hsl(120 20% 25%)'}
-        intensity={isNight ? 0.08 : 0.05}
+        intensity={isNight ? 0.08 : lighting.hemisphereIntensity}
       />
     </>
   );

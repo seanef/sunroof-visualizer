@@ -1,5 +1,12 @@
 export type RoofMaterial = 'green' | 'gravel' | 'pvc' | 'bitumen';
 
+export interface LightingConfig {
+  sunIntensity: number;      // multiplier for sun directional light (0-10)
+  ambientIntensity: number;  // ambient light intensity (0-0.5)
+  hemisphereIntensity: number; // hemisphere light intensity (0-0.5)
+  environmentIntensity: number; // HDR environment intensity (0-1)
+}
+
 export interface SolarConfig {
   roofMaterial: RoofMaterial;
   date: Date;
@@ -9,6 +16,7 @@ export interface SolarConfig {
   unitRows: number;
   unitColumns: number;
   arrayAzimuth: number; // degrees, 0 = North, 90 = East (front facing direction)
+  lighting: LightingConfig;
 }
 
 export interface SunPosition {
@@ -26,6 +34,13 @@ export const ROOF_MATERIALS: { value: RoofMaterial; label: string; color: string
   { value: 'bitumen', label: 'Bitumen Roof', color: '#404040' },
 ];
 
+export const DEFAULT_LIGHTING: LightingConfig = {
+  sunIntensity: 6.0,
+  ambientIntensity: 0.08,
+  hemisphereIntensity: 0.05,
+  environmentIntensity: 0.15,
+};
+
 export const DEFAULT_CONFIG: SolarConfig = {
   roofMaterial: 'gravel',
   date: new Date(),
@@ -35,4 +50,5 @@ export const DEFAULT_CONFIG: SolarConfig = {
   unitRows: 2,
   unitColumns: 3,
   arrayAzimuth: 90, // Default: front facing East
+  lighting: DEFAULT_LIGHTING,
 };

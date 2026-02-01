@@ -48,7 +48,7 @@ export function Scene({ config, sunPosition }: SceneProps) {
       {!isDay && <color attach="background" args={['#0a0a1a']} />}
 
       {/* Sun and lighting */}
-      <Sun position={sunPosition} quality={isMobile ? 'low' : 'high'} />
+      <Sun position={sunPosition} quality={isMobile ? 'low' : 'high'} lighting={config.lighting} />
 
       {/* Roof */}
       <Roof material={config.roofMaterial} />
@@ -84,8 +84,8 @@ export function Scene({ config, sunPosition }: SceneProps) {
         maxDistance={50}
       />
 
-      {/* Environment for reflections - reduced intensity to not wash out shadows */}
-      {!isMobile && <Environment preset="city" environmentIntensity={0.15} />}
+      {/* Environment for reflections - configurable intensity */}
+      {!isMobile && <Environment preset="city" environmentIntensity={config.lighting.environmentIntensity} />}
     </Canvas>
   );
 }
