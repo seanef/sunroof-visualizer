@@ -4,6 +4,7 @@ import { RoofMaterial } from '@/types/solar';
 import * as THREE from 'three';
 import gravelTextureImg from '@/assets/textures/gravel-roof.jpg';
 import greenTextureImg from '@/assets/textures/green-roof.jpg';
+import { deriveNormalMap, deriveRoughnessMap, syncRepeats } from '@/lib/pbr-textures';
 
 interface RoofProps {
   material: RoofMaterial;
@@ -18,105 +19,121 @@ const ROOF_COLORS: Record<RoofMaterial, string> = {
   bitumen: '#303030',
 };
 
-const ROOF_ROUGHNESS: Record<RoofMaterial, number> = {
-  green: 0.9,
-  gravel: 0.95,
-  pvc: 0.3,
-  bitumen: 0.7,
-};
-
 // Tile size in meters (400mm x 500mm)
 const TILE_WIDTH = 0.4;
 const TILE_DEPTH = 0.5;
+
+// Per-material PBR tuning: how strong the bump should feel and the roughness window.
+const PBR_PROFILE: Record<
+  RoofMaterial,
+  { normalStrength: number; roughness: { min: number; max: number; invert?: boolean }; normalScale: number; metalness: number }
+> = {
+  green: { normalStrength: 2.5, roughness: { min: 0.75, max: 0.95 }, normalScale: 1.1, metalness: 0 },
+  gravel: { normalStrength: 3.5, roughness: { min: 0.8, max: 1.0 }, normalScale: 1.4, metalness: 0 },
+  pvc: { normalStrength: 0.8, roughness: { min: 0.28, max: 0.45 }, normalScale: 0.35, metalness: 0.1 },
+  bitumen: { normalStrength: 2.2, roughness: { min: 0.55, max: 0.85 }, normalScale: 1.0, metalness: 0.05 },
+};
 
 export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
   // Load texture images
   const gravelTexture = useLoader(THREE.TextureLoader, gravelTextureImg);
   const greenTexture = useLoader(THREE.TextureLoader, greenTextureImg);
-  
-  const texture = useMemo(() => {
-    if (material === 'green') {
-      // Use the loaded green roof texture image
-      const tex = greenTexture.clone();
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      // Calculate repeats based on tile size (400mm x 500mm)
-      tex.repeat.set(width / TILE_WIDTH, depth / TILE_DEPTH);
-      tex.needsUpdate = true;
-      return tex;
-    }
-    
-    if (material === 'gravel') {
-      // Use the loaded gravel texture image
-      const tex = gravelTexture.clone();
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      // Calculate repeats based on tile size (400mm x 500mm)
-      tex.repeat.set(width / TILE_WIDTH, depth / TILE_DEPTH);
-      tex.needsUpdate = true;
-      return tex;
-    }
-    
+
+  // Build albedo source for the active material. Photo-based materials clone the loaded
+  // texture; procedural materials draw to a canvas. The same source is then fed into
+  // the normal/roughness derivation so all three maps stay perfectly aligned.
+  const albedoSource = useMemo<HTMLImageElement | HTMLCanvasElement | null>(() => {
+    if (material === 'green') return greenTexture.image as HTMLImageElement;
+    if (material === 'gravel') return gravelTexture.image as HTMLImageElement;
+
     if (material === 'pvc') {
-      // Create subtle, even texture for PVC membrane
       const canvas = document.createElement('canvas');
-      canvas.width = 256;
-      canvas.height = 256;
+      canvas.width = canvas.height = 256;
       const ctx = canvas.getContext('2d')!;
-      
-      // Light grey base
       ctx.fillStyle = '#e0e0e0';
       ctx.fillRect(0, 0, 256, 256);
-      
-      // Add subtle, even noise texture
+      // Subtle uniform grain so the derived normal has some micro-bump
       for (let i = 0; i < 8000; i++) {
         const x = Math.random() * 256;
         const y = Math.random() * 256;
         const shade = Math.floor(Math.random() * 20 - 10);
-        const baseGrey = 224; // Light grey base value
-        const grey = Math.max(200, Math.min(240, baseGrey + shade));
-        ctx.fillStyle = `rgb(${grey}, ${grey}, ${grey})`;
+        const grey = Math.max(200, Math.min(240, 224 + shade));
+        ctx.fillStyle = `rgb(${grey},${grey},${grey})`;
         ctx.fillRect(x, y, 1, 1);
       }
-      
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(8, 8);
-      return tex;
+      // Faint seam lines suggesting welded membrane strips (~1m repeat)
+      ctx.strokeStyle = 'rgba(160,160,160,0.35)';
+      ctx.lineWidth = 1;
+      for (let y = 0; y < 256; y += 64) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(256, y);
+        ctx.stroke();
+      }
+      return canvas;
     }
-    
+
     if (material === 'bitumen') {
-      // Create dark texture with color variation for bitumen
       const canvas = document.createElement('canvas');
-      canvas.width = 256;
-      canvas.height = 256;
+      canvas.width = canvas.height = 256;
       const ctx = canvas.getContext('2d')!;
-      
-      // Dark base color
       ctx.fillStyle = '#2a2a2a';
       ctx.fillRect(0, 0, 256, 256);
-      
-      // Add varied dark texture
       for (let i = 0; i < 10000; i++) {
         const x = Math.random() * 256;
         const y = Math.random() * 256;
         const shade = Math.floor(Math.random() * 30 - 15);
-        const baseValue = 42; // Dark base value
-        const value = Math.max(25, Math.min(60, baseValue + shade));
-        // Slight color variation (not pure grey)
-        const r = value + Math.floor(Math.random() * 8 - 4);
-        const g = value + Math.floor(Math.random() * 6 - 3);
-        const b = value + Math.floor(Math.random() * 4 - 2);
-        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+        const v = Math.max(25, Math.min(60, 42 + shade));
+        const r = v + Math.floor(Math.random() * 8 - 4);
+        const g = v + Math.floor(Math.random() * 6 - 3);
+        const b = v + Math.floor(Math.random() * 4 - 2);
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
         ctx.fillRect(x, y, 2, 2);
       }
-      
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(6, 6);
-      return tex;
+      // A few coarse mineral granules so SSAO/normals pick something up
+      for (let i = 0; i < 250; i++) {
+        const x = Math.random() * 256;
+        const y = Math.random() * 256;
+        const v = 70 + Math.floor(Math.random() * 40);
+        ctx.fillStyle = `rgba(${v},${v - 5},${v - 12},0.7)`;
+        ctx.beginPath();
+        ctx.arc(x, y, 1.2 + Math.random() * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      return canvas;
     }
-    
+
     return null;
-  }, [material, width, depth, gravelTexture, greenTexture]);
+  }, [material, gravelTexture, greenTexture]);
+
+  // Build the full PBR map set (albedo / normal / roughness) for the active material.
+  // Repeats are tuned per material: photo tiles repeat per logical tile size,
+  // procedural ones use looser repeats to read as a continuous surface.
+  const { albedo, normalMap, roughnessMap } = useMemo(() => {
+    if (!albedoSource) return { albedo: null, normalMap: null, roughnessMap: null };
+
+    const profile = PBR_PROFILE[material];
+    const isPhoto = material === 'green' || material === 'gravel';
+
+    // Albedo: clone the loaded texture for photo materials; wrap canvas otherwise.
+    let albedoTex: THREE.Texture;
+    if (material === 'green') albedoTex = greenTexture.clone();
+    else if (material === 'gravel') albedoTex = gravelTexture.clone();
+    else {
+      albedoTex = new THREE.CanvasTexture(albedoSource as HTMLCanvasElement);
+      albedoTex.colorSpace = THREE.SRGBColorSpace;
+    }
+
+    const normalTex = deriveNormalMap(albedoSource, profile.normalStrength);
+    const roughnessTex = deriveRoughnessMap(albedoSource, profile.roughness);
+
+    const repeatX = isPhoto ? width / TILE_WIDTH : material === 'pvc' ? 8 : 6;
+    const repeatY = isPhoto ? depth / TILE_DEPTH : material === 'pvc' ? 8 : 6;
+    syncRepeats([albedoTex, normalTex, roughnessTex], repeatX, repeatY);
+    albedoTex.needsUpdate = true;
+
+    return { albedo: albedoTex, normalMap: normalTex, roughnessMap: roughnessTex };
+  }, [albedoSource, material, width, depth, gravelTexture, greenTexture]);
 
   const buildingHeight = 4;
   const wallThickness = 0.3;
@@ -297,9 +314,12 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
         <planeGeometry args={[width + 0.4, depth + 0.4]} />
         <meshStandardMaterial
           color={ROOF_COLORS[material]}
-          roughness={ROOF_ROUGHNESS[material]}
-          metalness={material === 'pvc' ? 0.1 : 0}
-          map={texture}
+          map={albedo}
+          normalMap={normalMap ?? undefined}
+          normalScale={new THREE.Vector2(PBR_PROFILE[material].normalScale, PBR_PROFILE[material].normalScale)}
+          roughnessMap={roughnessMap ?? undefined}
+          roughness={1}
+          metalness={PBR_PROFILE[material].metalness}
         />
       </mesh>
 
