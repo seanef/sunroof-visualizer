@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import gravelTextureImg from '@/assets/textures/gravel-roof.jpg';
 import greenTextureImg from '@/assets/textures/green-roof.jpg';
 import { deriveNormalMap, deriveRoughnessMap, syncRepeats } from '@/lib/pbr-textures';
+import { applyTileVariation, TileVariationParams } from '@/lib/tile-variation-material';
 
 interface RoofProps {
   material: RoofMaterial;
@@ -23,15 +24,23 @@ const ROOF_COLORS: Record<RoofMaterial, string> = {
 const TILE_WIDTH = 0.4;
 const TILE_DEPTH = 0.5;
 
-// Per-material PBR tuning: how strong the bump should feel and the roughness window.
+// Per-material PBR tuning: bump strength, roughness window, and per-tile variation amounts.
+// `tileVariation.flip` is disabled for materials with directional features (PVC weld seams)
+// where mirroring would be visible at tile boundaries.
 const PBR_PROFILE: Record<
   RoofMaterial,
-  { normalStrength: number; roughness: { min: number; max: number; invert?: boolean }; normalScale: number; metalness: number }
+  {
+    normalStrength: number;
+    roughness: { min: number; max: number; invert?: boolean };
+    normalScale: number;
+    metalness: number;
+    tileVariation: Omit<TileVariationParams, 'tileRepeat'>;
+  }
 > = {
-  green: { normalStrength: 2.5, roughness: { min: 0.75, max: 0.95 }, normalScale: 1.1, metalness: 0 },
-  gravel: { normalStrength: 3.5, roughness: { min: 0.8, max: 1.0 }, normalScale: 1.4, metalness: 0 },
-  pvc: { normalStrength: 0.8, roughness: { min: 0.28, max: 0.45 }, normalScale: 0.35, metalness: 0.1 },
-  bitumen: { normalStrength: 2.2, roughness: { min: 0.55, max: 0.85 }, normalScale: 1.0, metalness: 0.05 },
+  green:   { normalStrength: 2.5, roughness: { min: 0.75, max: 0.95 }, normalScale: 1.1,  metalness: 0,    tileVariation: { hueJitter: 0.06,  roughnessJitter: 0.2,  normalJitter: 0.25, flip: true  } },
+  gravel:  { normalStrength: 3.5, roughness: { min: 0.8,  max: 1.0  }, normalScale: 1.4,  metalness: 0,    tileVariation: { hueJitter: 0.035, roughnessJitter: 0.18, normalJitter: 0.25, flip: true  } },
+  pvc:     { normalStrength: 0.8, roughness: { min: 0.28, max: 0.45 }, normalScale: 0.35, metalness: 0.1,  tileVariation: { hueJitter: 0.005, roughnessJitter: 0.06, normalJitter: 0.08, flip: false } },
+  bitumen: { normalStrength: 2.2, roughness: { min: 0.55, max: 0.85 }, normalScale: 1.0,  metalness: 0.05, tileVariation: { hueJitter: 0.02,  roughnessJitter: 0.18, normalJitter: 0.22, flip: true  } },
 };
 
 export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
@@ -132,8 +141,35 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
     syncRepeats([albedoTex, normalTex, roughnessTex], repeatX, repeatY);
     albedoTex.needsUpdate = true;
 
-    return { albedo: albedoTex, normalMap: normalTex, roughnessMap: roughnessTex };
+    return { albedo: albedoTex, normalMap: normalTex, roughnessMap: roughnessTex, repeatX, repeatY };
   }, [albedoSource, material, width, depth, gravelTexture, greenTexture]);
+
+  // Build the patched MeshStandardMaterial. Recreated when maps or material change so
+  // uniforms (notably uTileRepeat) stay aligned with the active texture set.
+  const roofMaterial = useMemo(() => {
+    if (!albedo) return null;
+    const profile = PBR_PROFILE[material];
+    const mat = new THREE.MeshStandardMaterial({
+      color: ROOF_COLORS[material],
+      map: albedo,
+      normalMap: normalMap ?? undefined,
+      normalScale: new THREE.Vector2(profile.normalScale, profile.normalScale),
+      roughnessMap: roughnessMap ?? undefined,
+      roughness: 1,
+      metalness: profile.metalness,
+    });
+    const isPhoto = material === 'green' || material === 'gravel';
+    const tileRepeatX = isPhoto ? width / TILE_WIDTH : material === 'pvc' ? 8 : 6;
+    const tileRepeatY = isPhoto ? depth / TILE_DEPTH : material === 'pvc' ? 8 : 6;
+    applyTileVariation(mat, {
+      tileRepeat: new THREE.Vector2(tileRepeatX, tileRepeatY),
+      ...profile.tileVariation,
+    });
+    return mat;
+  }, [albedo, normalMap, roughnessMap, material, width, depth]);
+
+  // Dispose the patched material when it changes to avoid GPU leaks.
+  useMemo(() => () => roofMaterial?.dispose(), [roofMaterial]);
 
   const buildingHeight = 4;
   const wallThickness = 0.3;
@@ -312,15 +348,7 @@ export function Roof({ material, width = 15, depth = 15 }: RoofProps) {
       {/* Main roof surface - extended slightly to go under parapets */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} castShadow receiveShadow>
         <planeGeometry args={[width + 0.4, depth + 0.4]} />
-        <meshStandardMaterial
-          color={ROOF_COLORS[material]}
-          map={albedo}
-          normalMap={normalMap ?? undefined}
-          normalScale={new THREE.Vector2(PBR_PROFILE[material].normalScale, PBR_PROFILE[material].normalScale)}
-          roughnessMap={roughnessMap ?? undefined}
-          roughness={1}
-          metalness={PBR_PROFILE[material].metalness}
-        />
+        {roofMaterial && <primitive object={roofMaterial} attach="material" />}
       </mesh>
 
       {/* Roof edge/parapet - properly aligned corners */}
