@@ -51,57 +51,78 @@ function Rock({ position, scale, rotation }: RockProps) {
   );
 }
 
-function GrassBlade({ position, height, rotation }: { position: [number, number, number]; height: number; rotation: number }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  
-  useFrame((state) => {
-    if (meshRef.current) {
-      // Gentle wind sway
-      const time = state.clock.elapsedTime;
-      meshRef.current.rotation.z = Math.sin(time * 2 + position[0] + position[2]) * 0.1;
+interface GrassBladeData {
+  x: number;
+  y: number;
+  z: number;
+  height: number;
+  rotation: number;
+  hue: number; // 0..1 — drives color jitter
+}
+
+function InstancedGrass({ blades }: { blades: GrassBladeData[] }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const phases = useMemo(
+    () => new Float32Array(blades.map((b) => b.x * 0.7 + b.z * 0.9)),
+    [blades]
+  );
+
+  useEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const color = new THREE.Color();
+    for (let i = 0; i < blades.length; i++) {
+      const b = blades[i];
+      dummy.position.set(b.x, b.y + b.height / 2, b.z);
+      dummy.rotation.set(0, b.rotation, 0);
+      dummy.scale.set(1, b.height / 0.25, 1);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+      // Color jitter: olive → fresh green
+      const t = b.hue;
+      color.setRGB(
+        0.22 + t * 0.18,
+        0.42 + t * 0.30,
+        0.18 + t * 0.16
+      );
+      mesh.setColorAt(i, color);
     }
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }, [blades, dummy]);
+
+  useFrame((state) => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const t = state.clock.elapsedTime;
+    for (let i = 0; i < blades.length; i++) {
+      const b = blades[i];
+      const sway = Math.sin(t * 1.8 + phases[i]) * 0.12;
+      dummy.position.set(b.x, b.y + b.height / 2, b.z);
+      dummy.rotation.set(sway * 0.6, b.rotation, sway);
+      dummy.scale.set(1, b.height / 0.25, 1);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
   });
 
   return (
-    <mesh
-      ref={meshRef}
-      position={position}
-      rotation={[0, rotation, 0]}
+    <instancedMesh
+      ref={ref}
+      args={[undefined as unknown as THREE.BufferGeometry, undefined as unknown as THREE.Material, blades.length]}
+      castShadow={false}
+      receiveShadow
     >
-      <coneGeometry args={[0.02, height, 4]} />
+      <coneGeometry args={[0.022, 0.25, 4]} />
       <meshStandardMaterial
-        color="#4a7c3f"
-        roughness={0.8}
+        vertexColors
+        color="#ffffff"
+        roughness={0.85}
         side={THREE.DoubleSide}
       />
-    </mesh>
-  );
-}
-
-function GrassCluster({ position, density = 8 }: { position: [number, number, number]; density?: number }) {
-  const blades = useMemo(() => {
-    const result = [];
-    for (let i = 0; i < density; i++) {
-      const offsetX = (Math.random() - 0.5) * 0.4;
-      const offsetZ = (Math.random() - 0.5) * 0.4;
-      const height = 0.15 + Math.random() * 0.2;
-      const rotation = Math.random() * Math.PI * 2;
-      
-      result.push({
-        position: [position[0] + offsetX, position[1] + height / 2, position[2] + offsetZ] as [number, number, number],
-        height,
-        rotation,
-      });
-    }
-    return result;
-  }, [position, density]);
-
-  return (
-    <group>
-      {blades.map((blade, i) => (
-        <GrassBlade key={i} {...blade} />
-      ))}
-    </group>
+    </instancedMesh>
   );
 }
 
