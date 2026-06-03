@@ -151,26 +151,26 @@ export function applyTileVariation(
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <normal_fragment_maps>',
       /* glsl */ `
-      #ifdef USE_NORMALMAP_TANGENTSPACE
-        vec3 mapN = texture2D(normalMap, tv_sampleUv).xyz * 2.0 - 1.0;
-        float nJit = clamp(1.0 + (tv_rnd.x - 0.5) * 2.0 * uNormalJitter, 0.0, 3.0);
-        mapN.xy *= normalScale * nJit;
-        #ifdef USE_TANGENT
-          normal = normalize(vTBN * mapN);
-        #else
-          normal = perturbNormal2Arb(- vViewPosition, normal, mapN, faceDirection);
-        #endif
-      #elif defined( USE_NORMALMAP_OBJECTSPACE )
-        normal = texture2D(normalMap, tv_sampleUv).xyz * 2.0 - 1.0;
+      #ifdef OBJECTSPACE_NORMALMAP
+        normal = texture2D( normalMap, tv_sampleUv ).xyz * 2.0 - 1.0;
         #ifdef FLIP_SIDED
           normal = - normal;
         #endif
         #ifdef DOUBLE_SIDED
           normal = normal * faceDirection;
         #endif
-        normal = normalize(normalMatrix * normal);
+        normal = normalize( normalMatrix * normal );
+      #elif defined( TANGENTSPACE_NORMALMAP )
+        vec3 mapN = texture2D( normalMap, tv_sampleUv ).xyz * 2.0 - 1.0;
+        float nJit = clamp(1.0 + (tv_rnd.x - 0.5) * 2.0 * uNormalJitter, 0.0, 3.0);
+        mapN.xy *= normalScale * nJit;
+        #ifdef USE_TANGENT
+          normal = normalize( vTBN * mapN );
+        #else
+          normal = normalize( tbn * mapN );
+        #endif
       #elif defined( USE_BUMPMAP )
-        normal = perturbNormalArb(- vViewPosition, normal, dHdxy_fwd(), faceDirection);
+        normal = perturbNormalArb( - vViewPosition, normal, dHdxy_fwd(), faceDirection );
       #endif
       `
     );
