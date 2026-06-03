@@ -596,6 +596,10 @@ export function Ground({ quality = 'high' }: GroundProps) {
           <Rock position={[-22, -3, -15]} scale={2.5} rotation={0.5} />
           <Rock position={[25, -3, 10]} scale={2.2} rotation={1.2} />
           <Rock position={[15, -3.2, -20]} scale={1.8} rotation={2.1} />
+          <Rock position={[-30, -3, 20]} scale={2.8} rotation={0.9} />
+          <Rock position={[32, -3, -25]} scale={2.4} rotation={1.7} />
+          <Rock position={[-12, -3.2, 28]} scale={2.0} rotation={2.6} />
+          <Rock position={[20, -3, 28]} scale={1.6} rotation={0.3} />
         </>
       )}
 
