@@ -237,35 +237,40 @@ export function Ground({ quality = 'high' }: GroundProps) {
     return rockData;
   }, [isLow]);
 
-  // Generate grass cluster positions - avoid road area
-  const grassClusters = useMemo(() => {
+  // Generate individual grass blades - avoid road area. Rendered as a single InstancedMesh.
+  const grassBlades = useMemo<GrassBladeData[]>(() => {
     if (isLow) return [];
-    const clusters: { position: [number, number, number]; density: number }[] = [];
-    
-    for (let x = -32; x <= 32; x += 1.4) {
-      for (let z = -32; z <= 32; z += 1.4) {
-        // Skip areas near the building
+    const blades: GrassBladeData[] = [];
+
+    for (let x = -34; x <= 34; x += 1.4) {
+      for (let z = -34; z <= 34; z += 1.4) {
         const distFromCenter = Math.sqrt(x * x + z * z);
         if (distFromCenter < 12) continue;
-        
-        // Skip road area
         if (isOnRoad(x, z)) continue;
-        
-        // Random chance to place grass
-        if (Math.random() > 0.35) {
-          const offsetX = (Math.random() - 0.5) * 1.5;
-          const offsetZ = (Math.random() - 0.5) * 1.5;
-          const terrainY = getTerrainHeight(x + offsetX, z + offsetZ);
-          
-          clusters.push({
-            position: [x + offsetX, -4 + terrainY + 0.05, z + offsetZ],
-            density: 4 + Math.floor(Math.random() * 5),
+        if (Math.random() > 0.55) continue;
+
+        const density = 4 + Math.floor(Math.random() * 5);
+        const clusterHue = Math.random();
+        for (let i = 0; i < density; i++) {
+          const ox = (Math.random() - 0.5) * 1.6;
+          const oz = (Math.random() - 0.5) * 1.6;
+          const bx = x + ox;
+          const bz = z + oz;
+          if (isOnRoad(bx, bz)) continue;
+          const terrainY = getTerrainHeight(bx, bz);
+          blades.push({
+            x: bx,
+            y: -4 + terrainY + 0.02,
+            z: bz,
+            height: 0.18 + Math.random() * 0.28,
+            rotation: Math.random() * Math.PI * 2,
+            hue: Math.max(0, Math.min(1, clusterHue + (Math.random() - 0.5) * 0.4)),
           });
         }
       }
     }
 
-    return clusters;
+    return blades;
   }, [isLow]);
 
   // Create terrain geometry with gentle undulation
