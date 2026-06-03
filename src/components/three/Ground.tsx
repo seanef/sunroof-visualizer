@@ -455,9 +455,9 @@ export function Ground({ quality = 'high' }: GroundProps) {
   const stones = useMemo(() => {
     if (isLow) return [] as Array<{ position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] }>;
 
-    return Array.from({ length: 30 }).map(() => {
+    return Array.from({ length: 90 }).map(() => {
       const angle = Math.random() * Math.PI * 2;
-      const radius = 12 + Math.random() * 20;
+      const radius = 12 + Math.random() * 28;
       const x = Math.cos(angle) * radius;
       const z = Math.sin(angle) * radius;
       
