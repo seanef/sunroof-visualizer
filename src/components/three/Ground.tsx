@@ -221,8 +221,8 @@ export function Ground({ quality = 'high' }: GroundProps) {
     if (isLow) return [];
     const clusters: { position: [number, number, number]; density: number }[] = [];
     
-    for (let x = -25; x <= 25; x += 2) {
-      for (let z = -25; z <= 25; z += 2) {
+    for (let x = -32; x <= 32; x += 1.4) {
+      for (let z = -32; z <= 32; z += 1.4) {
         // Skip areas near the building
         const distFromCenter = Math.sqrt(x * x + z * z);
         if (distFromCenter < 12) continue;
@@ -231,14 +231,14 @@ export function Ground({ quality = 'high' }: GroundProps) {
         if (isOnRoad(x, z)) continue;
         
         // Random chance to place grass
-        if (Math.random() > 0.4) {
+        if (Math.random() > 0.35) {
           const offsetX = (Math.random() - 0.5) * 1.5;
           const offsetZ = (Math.random() - 0.5) * 1.5;
           const terrainY = getTerrainHeight(x + offsetX, z + offsetZ);
           
           clusters.push({
             position: [x + offsetX, -4 + terrainY + 0.05, z + offsetZ],
-            density: 5 + Math.floor(Math.random() * 6),
+            density: 4 + Math.floor(Math.random() * 5),
           });
         }
       }
