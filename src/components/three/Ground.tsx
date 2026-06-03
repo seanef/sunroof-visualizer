@@ -149,12 +149,12 @@ function getRoadCurveX(z: number): number {
 // Get terrain height at a given position
 function getTerrainHeight(x: number, z: number): number {
   // Layered fbm-style noise — broader rolling hills + medium undulation + fine detail
-  const hills    = Math.sin(x * 0.035 + 0.7) * Math.cos(z * 0.04) * 1.4;
-  const hills2   = Math.sin(x * 0.022 - 1.3) * Math.cos(z * 0.028 + 0.4) * 1.1;
-  const medium   = Math.sin(x * 0.09 + 1.1) * Math.cos(z * 0.075) * 0.55;
-  const medium2  = Math.cos(x * 0.13 - 0.6) * Math.sin(z * 0.11 + 2.0) * 0.35;
-  const fine     = Math.sin(x * 0.27) * Math.sin(z * 0.23) * 0.18;
-  const microbump= Math.sin(x * 0.55 + z * 0.4) * Math.cos(z * 0.6 - x * 0.3) * 0.08;
+  const hills    = Math.sin(x * 0.035 + 0.7) * Math.cos(z * 0.04) * 2.4;
+  const hills2   = Math.sin(x * 0.022 - 1.3) * Math.cos(z * 0.028 + 0.4) * 1.8;
+  const medium   = Math.sin(x * 0.09 + 1.1) * Math.cos(z * 0.075) * 0.9;
+  const medium2  = Math.cos(x * 0.13 - 0.6) * Math.sin(z * 0.11 + 2.0) * 0.55;
+  const fine     = Math.sin(x * 0.27) * Math.sin(z * 0.23) * 0.28;
+  const microbump= Math.sin(x * 0.55 + z * 0.4) * Math.cos(z * 0.6 - x * 0.3) * 0.12;
 
   // Flatten near the building and road area
   const distFromCenter = Math.sqrt(x * x + z * z);
@@ -238,18 +238,23 @@ export function Ground({ quality = 'high' }: GroundProps) {
   }, [isLow]);
 
   // Generate individual grass blades - avoid road area. Rendered as a single InstancedMesh.
+  // Enabled on mobile too, but at reduced density.
   const grassBlades = useMemo<GrassBladeData[]>(() => {
-    if (isLow) return [];
     const blades: GrassBladeData[] = [];
+    const step = isLow ? 2.0 : 1.4;
+    const placeProb = isLow ? 0.4 : 0.55;
+    const densityBase = isLow ? 2 : 4;
+    const densityVar = isLow ? 3 : 5;
+    const extent = 34;
 
-    for (let x = -34; x <= 34; x += 1.4) {
-      for (let z = -34; z <= 34; z += 1.4) {
+    for (let x = -extent; x <= extent; x += step) {
+      for (let z = -extent; z <= extent; z += step) {
         const distFromCenter = Math.sqrt(x * x + z * z);
         if (distFromCenter < 12) continue;
         if (isOnRoad(x, z)) continue;
-        if (Math.random() > 0.55) continue;
+        if (Math.random() > placeProb) continue;
 
-        const density = 4 + Math.floor(Math.random() * 5);
+        const density = densityBase + Math.floor(Math.random() * densityVar);
         const clusterHue = Math.random();
         for (let i = 0; i < density; i++) {
           const ox = (Math.random() - 0.5) * 1.6;
@@ -262,7 +267,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
             x: bx,
             y: -4 + terrainY + 0.02,
             z: bz,
-            height: 0.18 + Math.random() * 0.28,
+            height: 0.22 + Math.random() * 0.32,
             rotation: Math.random() * Math.PI * 2,
             hue: Math.max(0, Math.min(1, clusterHue + (Math.random() - 0.5) * 0.4)),
           });
@@ -275,7 +280,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
 
   // Create terrain geometry with gentle undulation
   const terrainGeometry = useMemo(() => {
-    const segments = isLow ? 48 : 128;
+    const segments = isLow ? 96 : 160;
     const geo = new THREE.PlaneGeometry(100, 100, segments, segments);
     const positions = geo.attributes.position;
     
@@ -604,7 +609,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
       )}
 
       {/* Grass blades (instanced for perf) */}
-      {!isLow && grassBlades.length > 0 && <InstancedGrass blades={grassBlades} />}
+      {grassBlades.length > 0 && <InstancedGrass blades={grassBlades} />}
 
       {/* Small stones scattered around */}
       {!isLow &&
