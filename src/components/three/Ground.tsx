@@ -51,57 +51,78 @@ function Rock({ position, scale, rotation }: RockProps) {
   );
 }
 
-function GrassBlade({ position, height, rotation }: { position: [number, number, number]; height: number; rotation: number }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  
-  useFrame((state) => {
-    if (meshRef.current) {
-      // Gentle wind sway
-      const time = state.clock.elapsedTime;
-      meshRef.current.rotation.z = Math.sin(time * 2 + position[0] + position[2]) * 0.1;
+interface GrassBladeData {
+  x: number;
+  y: number;
+  z: number;
+  height: number;
+  rotation: number;
+  hue: number; // 0..1 — drives color jitter
+}
+
+function InstancedGrass({ blades }: { blades: GrassBladeData[] }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const phases = useMemo(
+    () => new Float32Array(blades.map((b) => b.x * 0.7 + b.z * 0.9)),
+    [blades]
+  );
+
+  useEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const color = new THREE.Color();
+    for (let i = 0; i < blades.length; i++) {
+      const b = blades[i];
+      dummy.position.set(b.x, b.y + b.height / 2, b.z);
+      dummy.rotation.set(0, b.rotation, 0);
+      dummy.scale.set(1, b.height / 0.25, 1);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+      // Color jitter: olive → fresh green
+      const t = b.hue;
+      color.setRGB(
+        0.22 + t * 0.18,
+        0.42 + t * 0.30,
+        0.18 + t * 0.16
+      );
+      mesh.setColorAt(i, color);
     }
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }, [blades, dummy]);
+
+  useFrame((state) => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const t = state.clock.elapsedTime;
+    for (let i = 0; i < blades.length; i++) {
+      const b = blades[i];
+      const sway = Math.sin(t * 1.8 + phases[i]) * 0.12;
+      dummy.position.set(b.x, b.y + b.height / 2, b.z);
+      dummy.rotation.set(sway * 0.6, b.rotation, sway);
+      dummy.scale.set(1, b.height / 0.25, 1);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
   });
 
   return (
-    <mesh
-      ref={meshRef}
-      position={position}
-      rotation={[0, rotation, 0]}
+    <instancedMesh
+      ref={ref}
+      args={[undefined as unknown as THREE.BufferGeometry, undefined as unknown as THREE.Material, blades.length]}
+      castShadow={false}
+      receiveShadow
     >
-      <coneGeometry args={[0.02, height, 4]} />
+      <coneGeometry args={[0.022, 0.25, 4]} />
       <meshStandardMaterial
-        color="#4a7c3f"
-        roughness={0.8}
+        vertexColors
+        color="#ffffff"
+        roughness={0.85}
         side={THREE.DoubleSide}
       />
-    </mesh>
-  );
-}
-
-function GrassCluster({ position, density = 8 }: { position: [number, number, number]; density?: number }) {
-  const blades = useMemo(() => {
-    const result = [];
-    for (let i = 0; i < density; i++) {
-      const offsetX = (Math.random() - 0.5) * 0.4;
-      const offsetZ = (Math.random() - 0.5) * 0.4;
-      const height = 0.15 + Math.random() * 0.2;
-      const rotation = Math.random() * Math.PI * 2;
-      
-      result.push({
-        position: [position[0] + offsetX, position[1] + height / 2, position[2] + offsetZ] as [number, number, number],
-        height,
-        rotation,
-      });
-    }
-    return result;
-  }, [position, density]);
-
-  return (
-    <group>
-      {blades.map((blade, i) => (
-        <GrassBlade key={i} {...blade} />
-      ))}
-    </group>
+    </instancedMesh>
   );
 }
 
@@ -127,18 +148,22 @@ function getRoadCurveX(z: number): number {
 
 // Get terrain height at a given position
 function getTerrainHeight(x: number, z: number): number {
-  const noise1 = Math.sin(x * 0.05) * Math.cos(z * 0.05) * 0.5;
-  const noise2 = Math.sin(x * 0.1 + 1) * Math.cos(z * 0.08) * 0.3;
-  const noise3 = Math.sin(x * 0.2) * Math.sin(z * 0.15) * 0.15;
-  
+  // Layered fbm-style noise — broader rolling hills + medium undulation + fine detail
+  const hills    = Math.sin(x * 0.035 + 0.7) * Math.cos(z * 0.04) * 1.4;
+  const hills2   = Math.sin(x * 0.022 - 1.3) * Math.cos(z * 0.028 + 0.4) * 1.1;
+  const medium   = Math.sin(x * 0.09 + 1.1) * Math.cos(z * 0.075) * 0.55;
+  const medium2  = Math.cos(x * 0.13 - 0.6) * Math.sin(z * 0.11 + 2.0) * 0.35;
+  const fine     = Math.sin(x * 0.27) * Math.sin(z * 0.23) * 0.18;
+  const microbump= Math.sin(x * 0.55 + z * 0.4) * Math.cos(z * 0.6 - x * 0.3) * 0.08;
+
   // Flatten near the building and road area
   const distFromCenter = Math.sqrt(x * x + z * z);
-  const flattenFactor = Math.min(1, distFromCenter / 15);
-  
+  const flattenFactor = Math.min(1, Math.max(0, (distFromCenter - 10) / 12));
+
   // Extra flattening for road corridor (positive z, door side)
-  const roadFlatten = z > PARKING_Z_START ? Math.max(0, 1 - Math.abs(x - getRoadCurveX(z)) / 6) * 0.7 : 0;
-  
-  return (noise1 + noise2 + noise3) * flattenFactor * (1 - roadFlatten);
+  const roadFlatten = z > PARKING_Z_START ? Math.max(0, 1 - Math.abs(x - getRoadCurveX(z)) / 6) * 0.85 : 0;
+
+  return (hills + hills2 + medium + medium2 + fine + microbump) * flattenFactor * (1 - roadFlatten);
 }
 
 // Check if a point is on the road or parking area (with curve)
@@ -176,12 +201,18 @@ export function Ground({ quality = 'high' }: GroundProps) {
           { center: [12, 12], count: 2 },
         ]
       : [
-          { center: [-15, -12], count: 5 },
-          { center: [18, -8], count: 4 },
-          { center: [-8, 15], count: 6 },
-          { center: [12, 14], count: 4 },
-          { center: [-20, 5], count: 3 },
-          { center: [22, 2], count: 5 },
+          { center: [-15, -12], count: 8 },
+          { center: [18, -8], count: 7 },
+          { center: [-8, 15], count: 9 },
+          { center: [12, 14], count: 7 },
+          { center: [-20, 5], count: 6 },
+          { center: [22, 2], count: 8 },
+          { center: [-28, -22], count: 6 },
+          { center: [28, -18], count: 7 },
+          { center: [-32, 18], count: 6 },
+          { center: [30, 22], count: 7 },
+          { center: [0, -28], count: 5 },
+          { center: [-18, 30], count: 5 },
         ];
 
     rockClusters.forEach(cluster => {
@@ -206,40 +237,45 @@ export function Ground({ quality = 'high' }: GroundProps) {
     return rockData;
   }, [isLow]);
 
-  // Generate grass cluster positions - avoid road area
-  const grassClusters = useMemo(() => {
+  // Generate individual grass blades - avoid road area. Rendered as a single InstancedMesh.
+  const grassBlades = useMemo<GrassBladeData[]>(() => {
     if (isLow) return [];
-    const clusters: { position: [number, number, number]; density: number }[] = [];
-    
-    for (let x = -25; x <= 25; x += 2) {
-      for (let z = -25; z <= 25; z += 2) {
-        // Skip areas near the building
+    const blades: GrassBladeData[] = [];
+
+    for (let x = -34; x <= 34; x += 1.4) {
+      for (let z = -34; z <= 34; z += 1.4) {
         const distFromCenter = Math.sqrt(x * x + z * z);
         if (distFromCenter < 12) continue;
-        
-        // Skip road area
         if (isOnRoad(x, z)) continue;
-        
-        // Random chance to place grass
-        if (Math.random() > 0.4) {
-          const offsetX = (Math.random() - 0.5) * 1.5;
-          const offsetZ = (Math.random() - 0.5) * 1.5;
-          const terrainY = getTerrainHeight(x + offsetX, z + offsetZ);
-          
-          clusters.push({
-            position: [x + offsetX, -4 + terrainY + 0.05, z + offsetZ],
-            density: 5 + Math.floor(Math.random() * 6),
+        if (Math.random() > 0.55) continue;
+
+        const density = 4 + Math.floor(Math.random() * 5);
+        const clusterHue = Math.random();
+        for (let i = 0; i < density; i++) {
+          const ox = (Math.random() - 0.5) * 1.6;
+          const oz = (Math.random() - 0.5) * 1.6;
+          const bx = x + ox;
+          const bz = z + oz;
+          if (isOnRoad(bx, bz)) continue;
+          const terrainY = getTerrainHeight(bx, bz);
+          blades.push({
+            x: bx,
+            y: -4 + terrainY + 0.02,
+            z: bz,
+            height: 0.18 + Math.random() * 0.28,
+            rotation: Math.random() * Math.PI * 2,
+            hue: Math.max(0, Math.min(1, clusterHue + (Math.random() - 0.5) * 0.4)),
           });
         }
       }
     }
 
-    return clusters;
+    return blades;
   }, [isLow]);
 
   // Create terrain geometry with gentle undulation
   const terrainGeometry = useMemo(() => {
-    const segments = isLow ? 24 : 64;
+    const segments = isLow ? 48 : 128;
     const geo = new THREE.PlaneGeometry(100, 100, segments, segments);
     const positions = geo.attributes.position;
     
@@ -419,9 +455,9 @@ export function Ground({ quality = 'high' }: GroundProps) {
   const stones = useMemo(() => {
     if (isLow) return [] as Array<{ position: [number, number, number]; rotation: [number, number, number]; scale: [number, number, number] }>;
 
-    return Array.from({ length: 30 }).map(() => {
+    return Array.from({ length: 90 }).map(() => {
       const angle = Math.random() * Math.PI * 2;
-      const radius = 12 + Math.random() * 20;
+      const radius = 12 + Math.random() * 28;
       const x = Math.cos(angle) * radius;
       const z = Math.sin(angle) * radius;
       
@@ -560,14 +596,15 @@ export function Ground({ quality = 'high' }: GroundProps) {
           <Rock position={[-22, -3, -15]} scale={2.5} rotation={0.5} />
           <Rock position={[25, -3, 10]} scale={2.2} rotation={1.2} />
           <Rock position={[15, -3.2, -20]} scale={1.8} rotation={2.1} />
+          <Rock position={[-30, -3, 20]} scale={2.8} rotation={0.9} />
+          <Rock position={[32, -3, -25]} scale={2.4} rotation={1.7} />
+          <Rock position={[-12, -3.2, 28]} scale={2.0} rotation={2.6} />
+          <Rock position={[20, -3, 28]} scale={1.6} rotation={0.3} />
         </>
       )}
 
-      {/* Grass clusters */}
-      {!isLow &&
-        grassClusters.map((cluster, i) => (
-          <GrassCluster key={`grass-${i}`} {...cluster} />
-        ))}
+      {/* Grass blades (instanced for perf) */}
+      {!isLow && grassBlades.length > 0 && <InstancedGrass blades={grassBlades} />}
 
       {/* Small stones scattered around */}
       {!isLow &&
