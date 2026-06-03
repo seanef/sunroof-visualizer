@@ -609,7 +609,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
       )}
 
       {/* Grass blades (instanced for perf) */}
-      {!isLow && grassBlades.length > 0 && <InstancedGrass blades={grassBlades} />}
+      {grassBlades.length > 0 && <InstancedGrass blades={grassBlades} />}
 
       {/* Small stones scattered around */}
       {!isLow &&
