@@ -151,26 +151,19 @@ export function applyTileVariation(
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <normal_fragment_maps>',
       /* glsl */ `
-      #ifdef USE_NORMALMAP_TANGENTSPACE
-        vec3 mapN = texture2D(normalMap, tv_sampleUv).xyz * 2.0 - 1.0;
+      // Temporarily swap vNormalMapUv so the stock chunk samples at our flipped UV,
+      // then run the original include. nJit modulates normalScale via a local override.
+      #ifdef USE_NORMALMAP
+        vec2 _tv_origNormalUv = vNormalMapUv;
+        vNormalMapUv = tv_sampleUv;
+        vec2 _tv_origNormalScale = normalScale;
         float nJit = clamp(1.0 + (tv_rnd.x - 0.5) * 2.0 * uNormalJitter, 0.0, 3.0);
-        mapN.xy *= normalScale * nJit;
-        #ifdef USE_TANGENT
-          normal = normalize(vTBN * mapN);
-        #else
-          normal = perturbNormal2Arb(- vViewPosition, normal, mapN, faceDirection);
-        #endif
-      #elif defined( USE_NORMALMAP_OBJECTSPACE )
-        normal = texture2D(normalMap, tv_sampleUv).xyz * 2.0 - 1.0;
-        #ifdef FLIP_SIDED
-          normal = - normal;
-        #endif
-        #ifdef DOUBLE_SIDED
-          normal = normal * faceDirection;
-        #endif
-        normal = normalize(normalMatrix * normal);
-      #elif defined( USE_BUMPMAP )
-        normal = perturbNormalArb(- vViewPosition, normal, dHdxy_fwd(), faceDirection);
+        normalScale = _tv_origNormalScale * nJit;
+      #endif
+      #include <normal_fragment_maps>
+      #ifdef USE_NORMALMAP
+        vNormalMapUv = _tv_origNormalUv;
+        normalScale = _tv_origNormalScale;
       #endif
       `
     );
