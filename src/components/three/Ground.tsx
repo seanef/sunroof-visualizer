@@ -599,11 +599,8 @@ export function Ground({ quality = 'high' }: GroundProps) {
         </>
       )}
 
-      {/* Grass clusters */}
-      {!isLow &&
-        grassClusters.map((cluster, i) => (
-          <GrassCluster key={`grass-${i}`} {...cluster} />
-        ))}
+      {/* Grass blades (instanced for perf) */}
+      {!isLow && grassBlades.length > 0 && <InstancedGrass blades={grassBlades} />}
 
       {/* Small stones scattered around */}
       {!isLow &&
