@@ -76,15 +76,16 @@ export function Sun({ position, quality = 'high', lighting }: SunProps) {
         intensity={intensity}
         color={getColor()}
         castShadow
-        shadow-mapSize-width={quality === 'low' ? 1024 : 4096}
-        shadow-mapSize-height={quality === 'low' ? 1024 : 4096}
+        shadow-mapSize-width={quality === 'low' ? 2048 : 4096}
+        shadow-mapSize-height={quality === 'low' ? 2048 : 4096}
         shadow-camera-near={0.5}
         shadow-camera-far={100}
-        shadow-camera-left={-35}
-        shadow-camera-right={35}
-        shadow-camera-top={35}
-        shadow-camera-bottom={-35}
-        shadow-bias={-0.0005}
+        shadow-camera-left={quality === 'low' ? -15 : -35}
+        shadow-camera-right={quality === 'low' ? 15 : 35}
+        shadow-camera-top={quality === 'low' ? 15 : 35}
+        shadow-camera-bottom={quality === 'low' ? -15 : -35}
+        shadow-bias={-0.0002}
+        shadow-normalBias={0.02}
       />
 
       {/* Night fill light ("moon") so the scene isn't pitch black */}
