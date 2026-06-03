@@ -180,12 +180,18 @@ export function Ground({ quality = 'high' }: GroundProps) {
           { center: [12, 12], count: 2 },
         ]
       : [
-          { center: [-15, -12], count: 5 },
-          { center: [18, -8], count: 4 },
-          { center: [-8, 15], count: 6 },
-          { center: [12, 14], count: 4 },
-          { center: [-20, 5], count: 3 },
-          { center: [22, 2], count: 5 },
+          { center: [-15, -12], count: 8 },
+          { center: [18, -8], count: 7 },
+          { center: [-8, 15], count: 9 },
+          { center: [12, 14], count: 7 },
+          { center: [-20, 5], count: 6 },
+          { center: [22, 2], count: 8 },
+          { center: [-28, -22], count: 6 },
+          { center: [28, -18], count: 7 },
+          { center: [-32, 18], count: 6 },
+          { center: [30, 22], count: 7 },
+          { center: [0, -28], count: 5 },
+          { center: [-18, 30], count: 5 },
         ];
 
     rockClusters.forEach(cluster => {
