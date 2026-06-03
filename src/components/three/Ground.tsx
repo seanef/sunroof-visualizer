@@ -127,18 +127,22 @@ function getRoadCurveX(z: number): number {
 
 // Get terrain height at a given position
 function getTerrainHeight(x: number, z: number): number {
-  const noise1 = Math.sin(x * 0.05) * Math.cos(z * 0.05) * 0.5;
-  const noise2 = Math.sin(x * 0.1 + 1) * Math.cos(z * 0.08) * 0.3;
-  const noise3 = Math.sin(x * 0.2) * Math.sin(z * 0.15) * 0.15;
-  
+  // Layered fbm-style noise — broader rolling hills + medium undulation + fine detail
+  const hills    = Math.sin(x * 0.035 + 0.7) * Math.cos(z * 0.04) * 1.4;
+  const hills2   = Math.sin(x * 0.022 - 1.3) * Math.cos(z * 0.028 + 0.4) * 1.1;
+  const medium   = Math.sin(x * 0.09 + 1.1) * Math.cos(z * 0.075) * 0.55;
+  const medium2  = Math.cos(x * 0.13 - 0.6) * Math.sin(z * 0.11 + 2.0) * 0.35;
+  const fine     = Math.sin(x * 0.27) * Math.sin(z * 0.23) * 0.18;
+  const microbump= Math.sin(x * 0.55 + z * 0.4) * Math.cos(z * 0.6 - x * 0.3) * 0.08;
+
   // Flatten near the building and road area
   const distFromCenter = Math.sqrt(x * x + z * z);
-  const flattenFactor = Math.min(1, distFromCenter / 15);
-  
+  const flattenFactor = Math.min(1, Math.max(0, (distFromCenter - 10) / 12));
+
   // Extra flattening for road corridor (positive z, door side)
-  const roadFlatten = z > PARKING_Z_START ? Math.max(0, 1 - Math.abs(x - getRoadCurveX(z)) / 6) * 0.7 : 0;
-  
-  return (noise1 + noise2 + noise3) * flattenFactor * (1 - roadFlatten);
+  const roadFlatten = z > PARKING_Z_START ? Math.max(0, 1 - Math.abs(x - getRoadCurveX(z)) / 6) * 0.85 : 0;
+
+  return (hills + hills2 + medium + medium2 + fine + microbump) * flattenFactor * (1 - roadFlatten);
 }
 
 // Check if a point is on the road or parking area (with curve)
