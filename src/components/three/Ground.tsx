@@ -243,7 +243,7 @@ export function Ground({ quality = 'high' }: GroundProps) {
 
   // Create terrain geometry with gentle undulation
   const terrainGeometry = useMemo(() => {
-    const segments = isLow ? 24 : 64;
+    const segments = isLow ? 48 : 128;
     const geo = new THREE.PlaneGeometry(100, 100, segments, segments);
     const positions = geo.attributes.position;
     
