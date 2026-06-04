@@ -80,10 +80,10 @@ export function Sun({ position, quality = 'high', lighting }: SunProps) {
         shadow-mapSize-height={quality === 'low' ? 2048 : 4096}
         shadow-camera-near={0.5}
         shadow-camera-far={100}
-        shadow-camera-left={quality === 'low' ? -15 : -35}
-        shadow-camera-right={quality === 'low' ? 15 : 35}
-        shadow-camera-top={quality === 'low' ? 15 : 35}
-        shadow-camera-bottom={quality === 'low' ? -15 : -35}
+        shadow-camera-left={quality === 'low' ? -15 : -20}
+        shadow-camera-right={quality === 'low' ? 15 : 20}
+        shadow-camera-top={quality === 'low' ? 15 : 20}
+        shadow-camera-bottom={quality === 'low' ? -15 : -20}
         shadow-bias={-0.0002}
         shadow-normalBias={0.02}
       />
