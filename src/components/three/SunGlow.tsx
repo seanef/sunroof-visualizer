@@ -40,7 +40,7 @@ export function SunGlow({ position }: SunGlowProps) {
         map={texture}
         transparent
         depthWrite={false}
-        depthTest={false}
+        depthTest={true}
         blending={THREE.AdditiveBlending}
         toneMapped={false}
       />
