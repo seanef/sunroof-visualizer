@@ -4,6 +4,8 @@ import { ControlPanel } from '@/components/controls/ControlPanel';
 import { MobileControlSheet } from '@/components/controls/MobileControlSheet';
 import { QuickControls } from '@/components/controls/QuickControls';
 import { useSunPosition } from '@/hooks/useSunPosition';
+import { useTimeAnimation } from '@/hooks/useTimeAnimation';
+import { ProductionChart } from '@/components/ProductionChart';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SolarConfig, DEFAULT_CONFIG } from '@/types/solar';
 
@@ -21,6 +23,18 @@ const Index = () => {
   const handleConfigChange = useCallback((updates: Partial<SolarConfig>) => {
     setConfig((prev) => ({ ...prev, ...updates }));
   }, []);
+
+  const handleTimeChange = useCallback((time: number) => {
+    setConfig((prev) => ({ ...prev, time }));
+  }, []);
+
+  const { isPlaying, togglePlay } = useTimeAnimation(
+    config.time,
+    config.date,
+    config.latitude,
+    config.longitude,
+    handleTimeChange
+  );
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
@@ -61,8 +75,18 @@ const Index = () => {
         </>
       )}
 
+      {/* Production chart + day playback */}
+      <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-[560px] z-10">
+        <ProductionChart
+          config={config}
+          isPlaying={isPlaying}
+          onTogglePlay={togglePlay}
+          onTimeChange={handleTimeChange}
+        />
+      </div>
+
       {/* Logo/Brand */}
-      <div className="absolute bottom-4 right-4 z-10">
+      <div className="absolute bottom-20 right-4 z-10 hidden md:block">
         <div className="glass-panel px-4 py-2">
           <span className="text-xs text-muted-foreground">Powered by </span>
           <span className="text-xs font-semibold gradient-text">Over Easy Solar</span>
