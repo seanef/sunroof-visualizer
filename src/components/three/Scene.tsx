@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Environment, Sky, ContactShadows } from '@react-three/drei';
+import { OrbitControls, Environment, Sky } from '@react-three/drei';
 import * as THREE from 'three';
 import { Roof } from './Roof';
 import { PVUnitArray } from './PVUnitArray';
@@ -79,17 +79,6 @@ export function Scene({ config, sunPosition }: SceneProps) {
           azimuth={config.arrayAzimuth}
         />
       </Suspense>
-
-      {/* Contact shadows anchor the PV array to the roof */}
-      <ContactShadows
-        position={[0, 0.01, 0]}
-        opacity={0.45}
-        scale={20}
-        blur={2.2}
-        far={4}
-        resolution={isMobile ? 256 : 512}
-        color="#0a0a14"
-      />
 
       {/* Ground with terrain, grass, and rocks */}
       <Ground quality={isMobile ? 'low' : 'high'} />
